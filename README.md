@@ -1,1 +1,1 @@
-# kup_report_generator
+# KUP report generator and commits history for the last month
