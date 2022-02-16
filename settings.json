@@ -3,11 +3,11 @@
   "EmployeePosition": "Software Engineer",
   "EmployeeFolderName": "\\\\gda-file-07\\vasya.popov",
   "EmployeeHasCommitsHistory": true,
-  "EmployeeCommitsAuthors": [ "Vasya Popov" ],
+  "EmployeeCommitsAuthors": [ "Eduard Paprotski" ],
   "ControlerFullName": "Petry Petrov",
   "ControlerPosition": "Directory Software Engineer",
   "ProjectName": "GaleraProject 1.0",
-  "ProjectRootFolder": "D:\\GaleraProject",
+  "ProjectRootFolder": "D:\\Development\\UV",
   "WorkingDays": 21,
   "AbsencesDays": 0
 }

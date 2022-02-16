@@ -5,83 +5,83 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using KUPReportGenerator.Generators;
 
-namespace KUPReportGenerator
+namespace KUPReportGenerator;
+
+internal class Program
 {
-    internal class Program
+    private static async Task Main()
     {
-        private static async Task Main()
+        Console.WriteLine("Started, Press Ctrl-C to stop.");
+        Console.WriteLine();
+
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (sender, eventArgs) =>
         {
-            Console.WriteLine("Started, Press Ctrl-C to stop.");
-            Console.WriteLine();
+            eventArgs.Cancel = true;
+            cts.Cancel();
+        };
 
-            var cts = new CancellationTokenSource();
-            Console.CancelKeyPress += (sender, eventArgs) =>
-            {
-                eventArgs.Cancel = true;
-                cts.Cancel();
-            };
-
-            var result = await RunAsync(cts.Token);
-            if (result.IsSuccess)
-            {
-                ConsoleHelper.PrintResults(result);
-            }
-            else
-            {
-                ConsoleHelper.PrintErrors(result);
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Press any key to continue.");
-            Console.ReadKey();
+        var result = await RunAsync(cts.Token);
+        if (result.IsSuccess)
+        {
+            ConsoleHelper.PrintResults(result);
+        }
+        else
+        {
+            ConsoleHelper.PrintErrors(result);
         }
 
-        private static async Task<Result> RunAsync(CancellationToken cancellationToken)
+        Console.WriteLine();
+        Console.WriteLine("Press any key to continue.");
+        Console.ReadKey();
+    }
+
+    private static async Task<Result> RunAsync(CancellationToken cancellationToken)
+    {
+        var initialize = Initialize(cancellationToken);
+        if (initialize.IsFailed)
         {
-            var initialize = Initialize(cancellationToken);
-            if (initialize.IsFailed)
-            {
-                return initialize;
-            }
-
-            var reportSettings = await ReportSettings.ParseAsync(Constants.SettingsFilePath, cancellationToken);
-            if (reportSettings.IsFailed)
-            {
-                return reportSettings.ToResult();
-            }
-
-            var reportsGenerator = new List<IReportGenerator>();
-            if (reportSettings.Value.EmployeeHasCommitsHistory)
-            {
-                reportsGenerator.Add(new CommitsHistoryReportGenerator());
-            }
-            reportsGenerator.Add(new HtmlReportGenerator());
-
-            var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
-
-            var reportResult = await reportGenerator.Generate(reportSettings.Value, cancellationToken);
-            return reportResult;
+            return initialize;
         }
 
-        private static Result Initialize(CancellationToken cancellationToken)
+        var reportSettings = await ReportSettings.ParseAsync(Constants.SettingsFilePath, cancellationToken);
+        if (reportSettings.IsFailed)
         {
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
+            return reportSettings.ToResult();
+        }
 
-                if (Directory.Exists(Constants.OutputDirectory))
-                {
-                    Directory.Delete(Constants.OutputDirectory, true);
-                }
+        var reportsGenerator = new List<IReportGenerator>();
+        if (reportSettings.Value.EmployeeHasCommitsHistory)
+        {
+            reportsGenerator.Add(new CommitsHistoryReportGenerator());
+        }
+        reportsGenerator.Add(new HtmlReportGenerator());
 
-                Directory.CreateDirectory(Constants.OutputDirectory);
-                return Result.Ok();
-            }
-            catch (Exception exc)
+        var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
+
+        var reportResult = await reportGenerator.Generate(reportSettings.Value, cancellationToken);
+        return reportResult;
+    }
+
+    private static Result Initialize(CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (Directory.Exists(Constants.OutputDirectory))
             {
-                return Result.Fail(new Error($"Initialization failed. Could't create output directory {Constants.OutputDirectory}.").CausedBy(exc));
+                Directory.Delete(Constants.OutputDirectory, true);
             }
+
+            Directory.CreateDirectory(Constants.OutputDirectory);
+            return Result.Ok();
+        }
+        catch (Exception exc)
+        {
+            return Result.Fail(new Error($"Initialization failed. Could't create output directory {Constants.OutputDirectory}.").CausedBy(exc));
         }
     }
 }

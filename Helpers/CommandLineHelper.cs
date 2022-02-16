@@ -1,61 +1,60 @@
-﻿using FluentResults;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentResults;
 
-namespace KUPReportGenerator
+namespace KUPReportGenerator.Helpers;
+
+internal static class CommandLineHelper
 {
-    internal static class CommandLineHelper
+    public static bool IsWindowsPlatform() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+    public static async Task<Result<Process>> RunCommandAsync(string command, string workingDirectory = "", bool redirectIo = true,
+        CancellationToken cancellationToken = default)
     {
-        public static bool IsWindowsPlatform() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
-        public static async Task<Result<Process>> RunCommandAsync(string command, string workingDirectory = "", bool redirectIo = true, 
-            CancellationToken cancellationToken = default)
+        var processStartInfo = new ProcessStartInfo
         {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = GetSystemShell(),
-                Arguments = IsWindowsPlatform() ? $"/c {command}" : $"-c \"{command.Replace("\"", "\\\"")}\"",
-                RedirectStandardInput = redirectIo,
-                RedirectStandardOutput = redirectIo,
-                RedirectStandardError = redirectIo,
-                UseShellExecute = false,
-                CreateNoWindow = redirectIo,
-                WorkingDirectory = workingDirectory
-            };
+            FileName = GetSystemShell(),
+            Arguments = IsWindowsPlatform() ? $"/c {command}" : $"-c \"{command.Replace("\"", "\\\"")}\"",
+            RedirectStandardInput = redirectIo,
+            RedirectStandardOutput = redirectIo,
+            RedirectStandardError = redirectIo,
+            UseShellExecute = false,
+            CreateNoWindow = redirectIo,
+            WorkingDirectory = workingDirectory
+        };
 
-            var process = Process.Start(processStartInfo);
-            if (process is null)
-            {
-                return Result.Fail("Process.Start failed to return a non-null process");
-            }
-
-            await process.WaitForExitAsync(cancellationToken);
-
-            return Result.Ok(process);
+        var process = Process.Start(processStartInfo);
+        if (process is null)
+        {
+            return Result.Fail("Process.Start failed to return a non-null process");
         }
 
-        private static string GetSystemShell()
+        await process.WaitForExitAsync(cancellationToken);
+
+        return Result.Ok(process);
+    }
+
+    private static string GetSystemShell()
+    {
+        if (TryGetEnvironmentVariable("COMSPEC", out var comspec))
         {
-            if (TryGetEnvironmentVariable("COMSPEC", out var comspec))
-            {
-                return comspec!;
-            }
-
-            if (TryGetEnvironmentVariable("SHELL", out var shell))
-            {
-                return shell!;
-            }
-
-            return IsWindowsPlatform() ? "cmd.exe" : "/bin/sh";
+            return comspec!;
         }
 
-        private static bool TryGetEnvironmentVariable(string variable, out string? value)
+        if (TryGetEnvironmentVariable("SHELL", out var shell))
         {
-            value = Environment.GetEnvironmentVariable(variable);
-            return !string.IsNullOrEmpty(value);
+            return shell!;
         }
+
+        return IsWindowsPlatform() ? "cmd.exe" : "/bin/sh";
+    }
+
+    private static bool TryGetEnvironmentVariable(string variable, out string? value)
+    {
+        value = Environment.GetEnvironmentVariable(variable);
+        return !string.IsNullOrEmpty(value);
     }
 }

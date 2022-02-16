@@ -1,11 +1,10 @@
-﻿using FluentResults;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using FluentResults;
 
-namespace KUPReportGenerator
+namespace KUPReportGenerator.Generators;
+
+public interface IReportGenerator
 {
-    public interface IReportGenerator
-    {
-        Task<Result> Generate(ReportSettings reportSettings, CancellationToken cancellationToken = default);
-    }
+    Task<Result> Generate(ReportSettings reportSettings, CancellationToken cancellationToken = default);
 }
