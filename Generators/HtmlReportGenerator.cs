@@ -44,7 +44,7 @@ internal class HtmlReportGenerator : IReportGenerator
                 employee_fullname = settings.EmployeeFullName,
                 employee_position = settings.EmployeePosition,
                 employee_commits_path =
-                    @$"{settings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month}\Commits.txt",
+                    @$"{settings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month:00}\Commits.txt",
                 controler_fullname = settings.ControlerFullName,
                 controler_position = settings.ControlerPosition,
             });

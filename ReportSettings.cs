@@ -4,49 +4,50 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using KUPReportGenerator.Helpers;
 
 namespace KUPReportGenerator;
 
-[Serializable]
 public record ReportSettings
 {
     [Required]
-    public string EmployeeFullName { get; init; } = null!;
+    public string EmployeeFullName { get; set; } = null!;
 
     [Required]
-    public string[] EmployeeCommitsAuthors { get; init; } = null!;
+    public string[] EmployeeCommitsAuthors { get; set; } = null!;
 
     [Required]
-    public bool EmployeeHasCommitsHistory { get; init; } = false;
+    public bool EmployeeHasCommitsHistory { get; set; } = false;
 
     [Required]
-    public string EmployeePosition { get; init; } = null!;
+    public string EmployeePosition { get; set; } = null!;
 
     [Required]
-    public string EmployeeFolderName { get; init; } = null!;
+    public string EmployeeFolderName { get; set; } = null!;
 
     [Required]
-    public string ControlerFullName { get; init; } = null!;
+    public string ControlerFullName { get; set; } = null!;
 
     [Required]
-    public string ControlerPosition { get; init; } = null!;
+    public string ControlerPosition { get; set; } = null!;
 
     [Required]
-    public string ProjectName { get; init; } = null!;
+    public string ProjectName { get; set; } = null!;
 
     [Required]
-    public string ProjectRootFolder { get; init; } = null!;
+    public string ProjectRootFolder { get; set; } = null!;
+
+    public ushort? WorkingDays { get; set; }
 
     [Required]
-    public ushort WorkingDays { get; init; }
+    public ushort AbsencesDays { get; set; }
 
-    [Required]
-    public ushort AbsencesDays { get; init; }
+    public string? RapidApiKey { get; set; }
 
-    public static async Task<Result<ReportSettings>> ParseAsync(string settingsFilePath,
+    public static async Task<Result<ReportSettings>> OpenAsync(string settingsFilePath,
         CancellationToken cancellationToken)
     {
         var reportSettingsText = await FileHelper.ReadAsync(settingsFilePath, cancellationToken);
@@ -60,8 +61,26 @@ public record ReportSettings
         try
         {
             await using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(reportSettingsText.Value));
-            reportSettings = await JsonSerializer.DeserializeAsync<ReportSettings>(memoryStream,
-                cancellationToken: cancellationToken);
+            reportSettings = await JsonSerializer.DeserializeAsync(memoryStream,
+                cancellationToken: cancellationToken, jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
+
+            if (reportSettings is not null && reportSettings.WorkingDays is null or 0)
+            {
+                if (reportSettings.RapidApiKey is null)
+                {
+                    return Result.Fail("Please set the number of working days in \"WorkingDays\" or the received API key from https://rapidapi.com/joursouvres-api/api/working-days/ in \"RapidApiKey\".");
+                }
+
+                using var rapidApi = new RapidApi(reportSettings.RapidApiKey!);
+
+                var workingDays = await rapidApi.GetWorkingDays(cancellationToken: cancellationToken);
+                if (workingDays.IsFailed)
+                {
+                    return workingDays.ToResult();
+                }
+
+                reportSettings.WorkingDays = workingDays.Value;
+            }
         }
         catch (Exception exc)
         {
@@ -75,4 +94,10 @@ public record ReportSettings
 
         return Result.Ok(reportSettings);
     }
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(ReportSettings))]
+internal partial class SourceGenerationContext : JsonSerializerContext
+{
 }

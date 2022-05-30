@@ -46,7 +46,7 @@ internal class Program
             return initialize;
         }
 
-        var reportSettings = await ReportSettings.ParseAsync(Constants.SettingsFilePath, cancellationToken);
+        var reportSettings = await ReportSettings.OpenAsync(Constants.SettingsFilePath, cancellationToken);
         if (reportSettings.IsFailed)
         {
             return reportSettings.ToResult();
