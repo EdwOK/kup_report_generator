@@ -1,0 +1,22 @@
+name: deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 6.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet publish --configuration Release --no-restore
+      - name: Publish
+        run: dotnet publish --configuration Release --runtime win-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true --self-contained=true --no-build --no-restore
