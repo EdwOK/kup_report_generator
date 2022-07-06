@@ -8,13 +8,31 @@ namespace KUPReportGenerator.Helpers;
 
 internal static class FileHelper
 {
+    public static Result<bool> Exists(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                return Result.Ok();
+            }
+
+            return Result.Fail($"{filePath} could not be found.");
+        }
+        catch (Exception exc)
+        {
+            return Result.Fail(new Error($"Failed check for existence of {filePath}.").CausedBy(exc));
+        }
+    }
+
     public static async Task<Result<string>> ReadAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
-            if (!File.Exists(filePath))
+            var fileExists = Exists(filePath);
+            if (fileExists.IsFailed)
             {
-                return Result.Fail($"{filePath} could not be found.");
+                return fileExists.ToResult();
             }
 
             await using var file = File.OpenRead(filePath);
