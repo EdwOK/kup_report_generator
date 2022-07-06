@@ -37,25 +37,19 @@ public record ReportSettings
     [Required]
     public string ProjectAdoOrganizationName { get; set; } = null!;
 
-    public ushort? WorkingDays { get; set; }
-
-    [Required]
+    [JsonIgnore]
     public ushort AbsencesDays { get; set; }
+
+    [JsonIgnore]
+    public ushort? WorkingDays { get; set; }
 
     public string? RapidApiKey { get; set; }
 
-    public static async Task<Result<ReportSettings>> EnrichWorkingDays(Result<ReportSettings> reportSettingsResult, CancellationToken cancellationToken)
+    public async Task<Result<ReportSettings>> EnrichWorkingDays(CancellationToken cancellationToken)
     {
-        var reportSettings = reportSettingsResult.Value;
-
-        if (reportSettings is not null && reportSettings.WorkingDays is null or 0)
+        if (WorkingDays is null or 0 && !string.IsNullOrEmpty(RapidApiKey))
         {
-            if (reportSettings.RapidApiKey is null)
-            {
-                return Result.Fail("Please set the number of working days in \"WorkingDays\" or the received API key from https://rapidapi.com/joursouvres-api/api/working-days/ in \"RapidApiKey\".");
-            }
-
-            using var rapidApi = new RapidApi(reportSettings.RapidApiKey!);
+            using var rapidApi = new RapidApi(RapidApiKey);
 
             var workingDays = await rapidApi.GetWorkingDays(cancellationToken: cancellationToken);
             if (workingDays.IsFailed)
@@ -63,10 +57,10 @@ public record ReportSettings
                 return workingDays.ToResult();
             }
 
-            reportSettings.WorkingDays = workingDays.Value;
+            WorkingDays = workingDays.Value;
         }
 
-        return Result.Ok(reportSettings!);
+        return Result.Ok(this);
     }
 
     public async Task<Result<ReportSettings>> SaveAsync(string filePath, CancellationToken cancellationToken)

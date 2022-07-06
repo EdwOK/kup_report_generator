@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using KUPReportGenerator.Generators;
 using Spectre.Console;
+using System.Globalization;
 
 namespace KUPReportGenerator;
 
@@ -29,8 +30,15 @@ internal class Program
                         .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
                         .AddChoices(new[] { actionRun, actionInstall }));
 
-                if (action == actionRun)
+                if (action is actionRun)
                 {
+                    var reportSettings = await LoadReportSettingsAsync(fileInfo, cancellationToken);
+                    if (reportSettings.IsFailed)
+                    {
+                        WriteErrors(reportSettings.ToResult());
+                        return;
+                    }
+
                     await AnsiConsole.Progress()
                         .AutoClear(true)
                         .Columns(new ProgressColumn[]
@@ -42,7 +50,7 @@ internal class Program
                         })
                         .StartAsync(async ctx =>
                         {
-                            var result = await RunAsync(fileInfo, ctx, cancellationToken);
+                            var result = await RunAsync(reportSettings.Value, ctx, cancellationToken);
                             if (result.IsSuccess)
                             {
                                 AnsiConsole.WriteLine("Done. Reports are successfully generated: ");
@@ -55,7 +63,7 @@ internal class Program
                             }
                         });
                 }
-                else if (action == actionInstall)
+                else if (action is actionInstall)
                 {
                     var result = await InstallAsync(fileInfo, cancellationToken);
                     if (result.IsSuccess)
@@ -124,7 +132,7 @@ internal class Program
 
         var controlerPosition = AnsiConsole.Prompt(
             new TextPrompt<string>("6. What's your [green]controler job position[/]?")
-                .DefaultValue(reportSettings?.ControlerFullName ?? "Petya Galupkin")
+                .DefaultValue(reportSettings?.ControlerFullName ?? "Dir Software Engineer")
                 .PromptStyle("yellow"));
 
         var projectName = AnsiConsole.Prompt(
@@ -142,8 +150,8 @@ internal class Program
         {
             rapidApiKey = AnsiConsole.Prompt(
                 new TextPrompt<string>("10. Great. Go to the [blue]https://rapidapi.com/joursouvres-api/api/working-days/[/] -> sign up -> copy the [green]`X-RapidAPI-Key`[/].")
-                .DefaultValue(reportSettings?.RapidApiKey ?? "29f54a418emshebe82a11ac98e27p1ed562jxcff7fb4f95751")
-                .PromptStyle("yellow"));
+                    .DefaultValue(reportSettings?.RapidApiKey ?? "29f54a418emshebe82a11ac98e27p1ed562jxcff7fb4f95751")
+                    .PromptStyle("yellow"));
         }
 
         var newReportSettings = new ReportSettings()
@@ -159,39 +167,49 @@ internal class Program
             RapidApiKey = rapidApiKey
         };
 
-        var initResult = await newReportSettings.SaveAsync(fileInfo.FullName, cancellationToken);
+        var initResult = await newReportSettings.SaveAsync(fileInfo.ToString(), cancellationToken);
         return initResult.ToResult();
     }
 
-    private static async Task<Result> RunAsync(FileInfo fileInfo, ProgressContext progressContext, CancellationToken cancellationToken)
+    private static async Task<Result<ReportSettings>> LoadReportSettingsAsync(FileInfo fileInfo, CancellationToken cancellationToken)
     {
-        var initTask = progressContext.AddTask("[green]Initialization.[/]");
-        initTask.Increment(50.0);
         var initialize = Initialize(cancellationToken);
-        initTask.Increment(50.0);
         if (initialize.IsFailed)
         {
             return initialize;
         }
 
-        var loadSettingsTask = progressContext.AddTask("[green]Loading report settings.[/]");
-        loadSettingsTask.Increment(50.0);
         var reportSettings = await ReportSettings.OpenAsync(fileInfo.ToString(), cancellationToken);
-        loadSettingsTask.Increment(50.0);
         if (reportSettings.IsFailed)
         {
             return reportSettings.ToResult();
         }
 
-        var enrichWorkingDaysTask = progressContext.AddTask("[green]Calculating the number of working days.[/]");
-        enrichWorkingDaysTask.Increment(50.0);
-        reportSettings = await ReportSettings.EnrichWorkingDays(reportSettings, cancellationToken);
-        enrichWorkingDaysTask.Increment(50.0);
+        reportSettings = await reportSettings.Value.EnrichWorkingDays(cancellationToken);
         if (reportSettings.IsFailed)
         {
             return reportSettings.ToResult();
         }
 
+        if (reportSettings.Value.WorkingDays is null or 0)
+        {
+            reportSettings.Value.WorkingDays = AnsiConsole.Prompt(
+                new TextPrompt<ushort>($"How many working days are there in {DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture)}?")
+                    .DefaultValue(reportSettings?.Value.WorkingDays ?? 21)
+                    .PromptStyle("yellow"));
+        }
+
+        reportSettings!.Value.AbsencesDays = AnsiConsole.Prompt(
+            new TextPrompt<ushort>($"How many absences days are there in {DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture)}?")
+                .DefaultValue(reportSettings?.Value.AbsencesDays ?? 0)
+                .PromptStyle("yellow"));
+
+        return reportSettings!;
+    }
+
+    private static async Task<Result> RunAsync(ReportSettings reportSettings, ProgressContext progressContext,
+        CancellationToken cancellationToken)
+    {
         var reportsGenerator = new IReportGenerator[]
         {
             new CommitsHistoryReportGenerator(),
@@ -199,7 +217,7 @@ internal class Program
         };
 
         var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
-        var reportResult = await reportGenerator.Generate(reportSettings.Value, progressContext, cancellationToken);
+        var reportResult = await reportGenerator.Generate(reportSettings, progressContext, cancellationToken);
         return reportResult;
     }
 
