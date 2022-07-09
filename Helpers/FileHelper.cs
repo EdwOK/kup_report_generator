@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentResults;
+﻿using FluentResults;
 
 namespace KUPReportGenerator.Helpers;
 

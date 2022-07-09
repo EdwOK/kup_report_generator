@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace KUPReportGenerator.Helpers;
+﻿namespace KUPReportGenerator.Helpers;
 
 internal static class DatetimeHelper
 {

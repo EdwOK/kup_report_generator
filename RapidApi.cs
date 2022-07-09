@@ -1,10 +1,6 @@
-﻿using System;
-using System.Net.Http;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentResults;
 using KUPReportGenerator.Helpers;
 
@@ -36,7 +32,6 @@ internal class RapidApi : IDisposable
             _httpClient.GetFromJsonAsync<JsonNode>(
                 $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={lastDate:yyyy-MM-dd}",
                 cancellationToken));
-
         if (jsonNode.IsFailed)
         {
             return jsonNode.ToResult();

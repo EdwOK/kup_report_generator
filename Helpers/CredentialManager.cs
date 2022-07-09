@@ -1,9 +1,7 @@
-﻿using FluentResults;
+﻿using System.Reflection;
+using FluentResults;
 using GitCredentialManager;
 using GitCredentialManager.Interop.Windows;
-using System;
-using System.IO;
-using System.Reflection;
 
 namespace KUPReportGenerator.Helpers;
 

@@ -1,9 +1,6 @@
-﻿using FluentResults;
-using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
+using FluentResults;
 
 namespace KUPReportGenerator.Helpers;
 
@@ -35,10 +32,10 @@ internal static class EnvironmentUtils
             return Result.Fail("Process.Start failed to return a non-null process.");
         }
 
-        var waitforExitAsync = await Result.Try(() => process.Value.WaitForExitAsync(cancellationToken));
-        if (waitforExitAsync.IsFailed)
+        var waitForExitAsync = await Result.Try(() => process.Value.WaitForExitAsync(cancellationToken));
+        if (waitForExitAsync.IsFailed)
         {
-            return waitforExitAsync;
+            return waitForExitAsync;
         }
 
         return Result.Ok(process.Value);

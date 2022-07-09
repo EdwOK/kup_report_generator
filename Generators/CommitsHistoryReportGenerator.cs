@@ -1,15 +1,10 @@
-﻿using System;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Text;
 using FluentResults;
+using GitCredentialManager;
 using KUPReportGenerator.Helpers;
+using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
-using Microsoft.TeamFoundation.SourceControl.WebApi;
-using GitCredentialManager;
-using System.Collections.Generic;
-using System.Linq;
 using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
@@ -175,6 +170,8 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             return credentials;
         }
 
-        return Result.Fail("Could not find git credentials.");
+        return Result.Fail(new Error("Could not find git credentials.")
+            .WithMetadata("EmployeeEmail", employeeEmail)
+            .WithMetadata("EmployeeOrganization", employeeOrganization));
     }
 }

@@ -1,13 +1,9 @@
-﻿using FluentResults;
-using KUPReportGenerator.Helpers;
-using System;
-using System.CommandLine;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using KUPReportGenerator.Generators;
-using Spectre.Console;
+﻿using System.CommandLine;
 using System.Globalization;
+using FluentResults;
+using KUPReportGenerator.Generators;
+using KUPReportGenerator.Helpers;
+using Spectre.Console;
 
 namespace KUPReportGenerator;
 
@@ -185,21 +181,26 @@ internal class Program
             return reportSettings.ToResult();
         }
 
-        reportSettings = await reportSettings.Value.EnrichWorkingDays(cancellationToken);
-        if (reportSettings.IsFailed)
+        if (!string.IsNullOrEmpty(reportSettings.Value.RapidApiKey))
         {
-            return reportSettings.ToResult();
-        }
+            using var rapidApi = new RapidApi(reportSettings.Value.RapidApiKey);
+            var workingDays = await rapidApi.GetWorkingDays(cancellationToken: cancellationToken);
+            if (workingDays.IsFailed)
+            {
+                return workingDays.ToResult();
+            }
 
-        if (reportSettings.Value.WorkingDays is null or 0)
+            reportSettings.Value.WorkingDays = workingDays.Value;
+        }
+        else
         {
             reportSettings.Value.WorkingDays = AnsiConsole.Prompt(
                 new TextPrompt<ushort>($"How many working days are there in {DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture)}?")
-                    .DefaultValue(reportSettings?.Value.WorkingDays ?? 21)
+                    .DefaultValue(reportSettings.Value.WorkingDays ?? 21)
                     .PromptStyle("yellow"));
         }
 
-        reportSettings!.Value.AbsencesDays = AnsiConsole.Prompt(
+        reportSettings.Value.AbsencesDays = AnsiConsole.Prompt(
             new TextPrompt<ushort>($"How many absences days are there in {DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture)}?")
                 .DefaultValue(reportSettings?.Value.AbsencesDays ?? 0)
                 .PromptStyle("yellow"));

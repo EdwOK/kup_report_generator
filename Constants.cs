@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace KUPReportGenerator;
+﻿namespace KUPReportGenerator;
 
 public static class Constants
 {

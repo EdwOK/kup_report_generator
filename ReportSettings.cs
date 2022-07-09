@@ -1,12 +1,8 @@
-﻿using FluentResults;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.IO;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
+using FluentResults;
 using KUPReportGenerator.Helpers;
 
 namespace KUPReportGenerator;
@@ -44,24 +40,6 @@ public record ReportSettings
     public ushort? WorkingDays { get; set; }
 
     public string? RapidApiKey { get; set; }
-
-    public async Task<Result<ReportSettings>> EnrichWorkingDays(CancellationToken cancellationToken)
-    {
-        if (WorkingDays is null or 0 && !string.IsNullOrEmpty(RapidApiKey))
-        {
-            using var rapidApi = new RapidApi(RapidApiKey);
-
-            var workingDays = await rapidApi.GetWorkingDays(cancellationToken: cancellationToken);
-            if (workingDays.IsFailed)
-            {
-                return workingDays.ToResult();
-            }
-
-            WorkingDays = workingDays.Value;
-        }
-
-        return Result.Ok(this);
-    }
 
     public async Task<Result<ReportSettings>> SaveAsync(string filePath, CancellationToken cancellationToken)
     {
