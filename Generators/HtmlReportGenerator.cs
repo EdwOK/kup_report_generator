@@ -1,24 +1,29 @@
-﻿using System;
-using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using FluentResults;
 using HandlebarsDotNet;
 using KUPReportGenerator.Helpers;
+using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
 
 internal class HtmlReportGenerator : IReportGenerator
 {
-    public async Task<Result> Generate(ReportSettings reportSettings, CancellationToken cancellationToken)
+    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken)
     {
+        var generateHtmlReportTask = progressContext.AddTask("[green]Generate HTML KUP report.[/]");
+        generateHtmlReportTask.Increment(50.0);
         var htmlReport = await GenerateHtmlReport(reportSettings, cancellationToken);
+        generateHtmlReportTask.Increment(50.0);
         if (htmlReport.IsFailed)
         {
             return htmlReport.ToResult();
         }
 
-        return await FileHelper.SaveAsync(Constants.ReportFilePath, htmlReport.Value, cancellationToken);
+        var saveReportTask = progressContext.AddTask("[green]Saving KUP in a report file.[/]");
+        saveReportTask.Increment(50.0);
+        var saveResult = await FileHelper.SaveAsync(Constants.ReportFilePath, htmlReport.Value, cancellationToken);
+        saveReportTask.Increment(50.0);
+        return saveResult;
     }
 
     private static async Task<Result<string>> GenerateHtmlReport(ReportSettings settings, CancellationToken cancellationToken)
@@ -49,7 +54,6 @@ internal class HtmlReportGenerator : IReportGenerator
                 controler_position = settings.ControlerPosition,
             });
 
-            cancellationToken.ThrowIfCancellationRequested();
             return Result.Ok(htmlReport);
         }
         catch (Exception exc)

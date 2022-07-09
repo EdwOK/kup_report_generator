@@ -1,10 +1,9 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using FluentResults;
+﻿using FluentResults;
+using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
 
 public interface IReportGenerator
 {
-    Task<Result> Generate(ReportSettings reportSettings, CancellationToken cancellationToken = default);
+    Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken = default);
 }
