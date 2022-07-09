@@ -11,68 +11,76 @@ internal class Program
 {
     private static async Task<int> Main(string[] args)
     {
-        AnsiConsole.Write(new FigletText("KUP Report Generator").Centered().Color(Color.Green1));
-        AnsiConsole.MarkupLine("Started, Press [green]Ctrl-C[/] to stop.");
+        try
+        {
+            AnsiConsole.Write(new FigletText("KUP Report Generator").Centered().Color(Color.Green1));
+            AnsiConsole.MarkupLine("Started, Press [green]Ctrl-C[/] to stop.");
 
-        var rootCommand = CommandLineHelper.CreateRootCommand(
-            async (FileInfo fileInfo, CancellationToken cancellationToken) =>
-            {
-                const string actionRun = "Run";
-                const string actionInstall = "Install";
-
-                var action = AnsiConsole.Prompt(
-                    new SelectionPrompt<string>()
-                        .Title("What do you want [green]to do[/]?")
-                        .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
-                        .AddChoices(new[] { actionRun, actionInstall }));
-
-                if (action is actionRun)
+            var rootCommand = CommandLineHelper.CreateRootCommand(
+                async (FileInfo fileInfo, CancellationToken cancellationToken) =>
                 {
-                    var reportSettings = await LoadReportSettingsAsync(fileInfo, cancellationToken);
-                    if (reportSettings.IsFailed)
-                    {
-                        WriteErrors(reportSettings.ToResult());
-                        return;
-                    }
+                    const string actionRun = "Run";
+                    const string actionInstall = "Install";
 
-                    await AnsiConsole.Progress()
-                        .AutoClear(true)
-                        .Columns(new ProgressColumn[]
+                    var action = AnsiConsole.Prompt(
+                        new SelectionPrompt<string>()
+                            .Title("What do you want [green]to do[/]?")
+                            .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
+                            .AddChoices(new[] { actionRun, actionInstall }));
+
+                    if (action is actionRun)
+                    {
+                        var reportSettings = await LoadReportSettingsAsync(fileInfo, cancellationToken);
+                        if (reportSettings.IsFailed)
                         {
+                            WriteErrors(reportSettings.ToResult());
+                            return;
+                        }
+
+                        await AnsiConsole.Progress()
+                            .AutoClear(true)
+                            .Columns(new ProgressColumn[]
+                            {
                             new TaskDescriptionColumn(),
                             new ProgressBarColumn(),
                             new PercentageColumn(),
                             new RemainingTimeColumn()
-                        })
-                        .StartAsync(async ctx =>
+                            })
+                            .StartAsync(async ctx =>
+                            {
+                                var result = await RunAsync(reportSettings.Value, ctx, cancellationToken);
+                                if (result.IsSuccess)
+                                {
+                                    AnsiConsole.WriteLine("Done. Reports are successfully generated: ");
+                                    AnsiConsole.MarkupLine($"- [green]{Constants.ReportFilePath}[/]");
+                                    AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
+                                }
+                                else
+                                {
+                                    WriteErrors(result);
+                                }
+                            });
+                    }
+                    else if (action is actionInstall)
+                    {
+                        var result = await InstallAsync(fileInfo, cancellationToken);
+                        if (result.IsSuccess)
                         {
-                            var result = await RunAsync(reportSettings.Value, ctx, cancellationToken);
-                            if (result.IsSuccess)
-                            {
-                                AnsiConsole.WriteLine("Done. Reports are successfully generated: ");
-                                AnsiConsole.MarkupLine($"- [green]{Constants.ReportFilePath}[/]");
-                                AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
-                            }
-                            else
-                            {
-                                WriteErrors(result);
-                            }
-                        });
-                }
-                else if (action is actionInstall)
-                {
-                    var result = await InstallAsync(fileInfo, cancellationToken);
-                    if (result.IsSuccess)
-                    {
-                        AnsiConsole.WriteLine("Done. Now you can run.");
+                            AnsiConsole.WriteLine("Done. Now you can run.");
+                        }
+                        else
+                        {
+                            WriteErrors(result);
+                        }
                     }
-                    else
-                    {
-                        WriteErrors(result);
-                    }
-                }
-            });
-        return await rootCommand.InvokeAsync(args);
+                });
+
+            return await rootCommand.InvokeAsync(args);
+        }
+        finally
+        {
+            Console.ReadKey();
+        }
     }
 
     private static async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellationToken)
