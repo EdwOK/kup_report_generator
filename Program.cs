@@ -123,10 +123,9 @@ internal class Program
                 .DefaultValue(reportSettings?.EmployeePosition ?? "Software Engineer")
                 .PromptStyle("yellow"));
 
-        var employeeFolderName = string.Join(".", employeeFullName.ToLower().Split(new char[] { '\u002C' }, StringSplitOptions.RemoveEmptyEntries));
         var employeeFolderPath = AnsiConsole.Prompt(
             new TextPrompt<string>("4. What's your [green]remote folder[/]?")
-                .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{employeeFolderName}")
+                .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{employeeFullName.ToLower().Replace(' ', '.')}")
                 .PromptStyle("yellow"));
 
         var controlerFullName = AnsiConsole.Prompt(
