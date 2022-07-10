@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using FluentResults;
 using GitCredentialManager;
 using KUPReportGenerator.Helpers;
@@ -36,40 +37,40 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
     {
         try
         {
-            var delimiterLine = new string('-', 72);
-            var results = new Result<string>();
-
             var adoCommits = await GetAdoCommitsHistory(reportSettings, progressContext, cancellationToken);
             if (adoCommits.IsFailed)
             {
                 return adoCommits.ToResult();
             }
 
+            var resultBuilder = new StringBuilder();
+            var delimiterLine = new string('-', 72);
+
             foreach (var (repository, commitsHistory) in adoCommits.Value)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var commitHistoryBuilder = new StringBuilder();
 
-                var commitsHistoryRepoBuilder = new StringBuilder();
+                commitHistoryBuilder.AppendLine($"PROJECT: {repository}:");
+                commitHistoryBuilder.AppendLine();
+                commitHistoryBuilder.AppendJoin(Environment.NewLine, commitsHistory.Select(c => $"{c.CommitId[..7]}, {c.Author.Name}, {c.Author.Date:yyyy-MM-dd}, {c.Comment}"));
+                commitHistoryBuilder.AppendLine();
+                commitHistoryBuilder.AppendLine(delimiterLine);
+                commitHistoryBuilder.AppendLine();
 
-                commitsHistoryRepoBuilder.AppendLine($"PROJECT: {repository}:");
-                commitsHistoryRepoBuilder.AppendLine();
-                commitsHistoryRepoBuilder.AppendJoin(Environment.NewLine, commitsHistory);
-                commitsHistoryRepoBuilder.AppendLine();
-                commitsHistoryRepoBuilder.AppendLine(delimiterLine);
-                commitsHistoryRepoBuilder.AppendLine();
-
-                results = results.WithValue(results.Value + commitsHistoryRepoBuilder);
+                resultBuilder.Append(commitHistoryBuilder);
             }
 
-            return results;
+            return Result.Ok(resultBuilder.ToString());
         }
         catch (Exception exc)
+
         {
             return Result.Fail(new Error("Failed with generation history of commits.").CausedBy(exc));
         }
     }
 
-    private static async Task<Result<Dictionary<string, IEnumerable<string>>>> GetAdoCommitsHistory(ReportSettings reportSettings,
+    private static async Task<Result<Dictionary<string, IEnumerable<GitCommitRef>>>> GetAdoCommitsHistory(ReportSettings reportSettings,
         ProgressContext progressContext, CancellationToken cancellationToken)
     {
         try
@@ -94,7 +95,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
             var firstDate = DatetimeHelper.GetFirstDateOfMonth();
             var lastDate = DatetimeHelper.GetLastDateOfMonth();
-            var allCommitsHistory = new Dictionary<string, IEnumerable<string>>();
+            var allCommitsHistory = new Dictionary<string, IEnumerable<GitCommitRef>>();
 
             var repositories = await client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken);
             var traversingCommitsTask = progressContext.AddTask("[green]Getting history of commits.[/]", maxValue: repositories.Count);
@@ -102,14 +103,21 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             foreach (var repository in repositories)
             {
                 traversingCommitsTask.Increment(1.0);
-                var repoCommitsHistory = await Result.Try(() => client.Value.GetCommitsAsync(repository.Id, new GitQueryCommitsCriteria
-                {
-                    Author = credentials.Value.Account,
-                    FromDate = firstDate.ToString(),
-                    ToDate = lastDate.ToString()
-                },
-                cancellationToken: cancellationToken));
 
+                var repoCommitsHistory = await Result.Try(() => client.Value.GetCommitsAsync(repository.Id,
+                    new GitQueryCommitsCriteria
+                    {
+                        ItemVersion = new GitVersionDescriptor
+                        {
+                            VersionType = GitVersionType.Branch,
+                            VersionOptions = GitVersionOptions.None,
+                            Version = "main"
+                        },
+                        Author = credentials.Value.Account,
+                        FromDate = firstDate.ToString(),
+                        ToDate = lastDate.ToString()
+                    },
+                    cancellationToken: cancellationToken));
                 if (repoCommitsHistory.IsFailed)
                 {
                     continue;
@@ -117,7 +125,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
                 if (repoCommitsHistory.Value.Count > 0)
                 {
-                    allCommitsHistory.Add(repository.Name, repoCommitsHistory.Value.Select(c => c.Comment));
+                    allCommitsHistory.Add(repository.Name, repoCommitsHistory.Value);
                 }
             }
 
