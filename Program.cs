@@ -41,10 +41,10 @@ internal class Program
                             .AutoClear(true)
                             .Columns(new ProgressColumn[]
                             {
-                            new TaskDescriptionColumn(),
-                            new ProgressBarColumn(),
-                            new PercentageColumn(),
-                            new RemainingTimeColumn()
+                                new TaskDescriptionColumn(),
+                                new ProgressBarColumn(),
+                                new PercentageColumn(),
+                                new RemainingTimeColumn()
                             })
                             .StartAsync(async ctx =>
                             {

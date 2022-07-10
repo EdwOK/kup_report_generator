@@ -5,8 +5,22 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore tools
+      run: dotnet tool restore
+    - name: Check Code Format
+      run: dotnet format --verify-no-changes KUPReportGenerator.sln
+
   build:
     runs-on: ubuntu-latest
     steps:

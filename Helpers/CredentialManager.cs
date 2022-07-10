@@ -38,4 +38,3 @@ internal static class CredentialManager
         return candidatePath;
     }
 }
-
