@@ -153,7 +153,7 @@ internal class Program
         {
             rapidApiKey = AnsiConsole.Prompt(
                 new TextPrompt<string>("10. Great. Go to the [blue]https://rapidapi.com/joursouvres-api/api/working-days/[/] -> sign up -> copy the [green]`X-RapidAPI-Key`[/].")
-                    .DefaultValue(reportSettings?.RapidApiKey ?? "29f54a418emshebe82a11ac98e27p1ed562jxcff7fb4f95751")
+                    .DefaultValue(reportSettings?.RapidApiKey ?? "")
                     .PromptStyle("yellow"));
         }
 
@@ -188,27 +188,28 @@ internal class Program
             return reportSettings.ToResult();
         }
 
-        if (!string.IsNullOrEmpty(reportSettings.Value.RapidApiKey))
+        var targetMonthName = DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
+        ushort targetWorkingDays = 21;
+
+        if (!string.IsNullOrEmpty(reportSettings!.Value.RapidApiKey))
         {
             using var rapidApi = new RapidApi(reportSettings.Value.RapidApiKey);
-            var workingDays = await rapidApi.GetWorkingDays(cancellationToken: cancellationToken);
-            if (workingDays.IsFailed)
+            var workingDaysResult = await rapidApi.GetWorkingDays(cancellationToken: cancellationToken);
+            if (workingDaysResult.IsFailed)
             {
-                return workingDays.ToResult();
+                return workingDaysResult.ToResult();
             }
 
-            reportSettings.Value.WorkingDays = workingDays.Value;
-        }
-        else
-        {
-            reportSettings.Value.WorkingDays = AnsiConsole.Prompt(
-                new TextPrompt<ushort>($"How many working days are there in {DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture)}?")
-                    .DefaultValue(reportSettings.Value.WorkingDays ?? 21)
-                    .PromptStyle("yellow"));
+            targetWorkingDays = workingDaysResult.Value;
         }
 
+        reportSettings.Value.WorkingDays = AnsiConsole.Prompt(
+            new TextPrompt<ushort>($"How many [green]working days[/] are there in {targetMonthName}?")
+                .DefaultValue(reportSettings.Value.WorkingDays ?? targetWorkingDays)
+                .PromptStyle("yellow"));
+
         reportSettings.Value.AbsencesDays = AnsiConsole.Prompt(
-            new TextPrompt<ushort>($"How many absences days are there in {DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture)}?")
+            new TextPrompt<ushort>($"How many [green]absences days[/] are there in {targetMonthName}?")
                 .DefaultValue(reportSettings?.Value.AbsencesDays ?? 0)
                 .PromptStyle("yellow"));
 
