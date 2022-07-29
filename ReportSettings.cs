@@ -16,7 +16,7 @@ public record ReportSettings
     public string EmployeeEmail { get; set; } = null!;
 
     [Required]
-    public string EmployeePosition { get; set; } = null!;
+    public string EmployeeJobPosition { get; set; } = null!;
 
     [Required]
     public string EmployeeFolderName { get; set; } = null!;
@@ -25,7 +25,7 @@ public record ReportSettings
     public string ControlerFullName { get; set; } = null!;
 
     [Required]
-    public string ControlerPosition { get; set; } = null!;
+    public string ControlerJobPosition { get; set; } = null!;
 
     [Required]
     public string ProjectName { get; set; } = null!;

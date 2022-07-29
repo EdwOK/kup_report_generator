@@ -54,6 +54,11 @@ internal class Program
                                     AnsiConsole.WriteLine("Done. Reports are successfully generated: ");
                                     AnsiConsole.MarkupLine($"- [green]{Constants.ReportFilePath}[/]");
                                     AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
+
+                                    if (EnvironmentUtils.IsWindowsPlatform())
+                                    {
+                                        await EnvironmentUtils.RunCommandAsync($"start {Constants.OutputDirectory}");
+                                    }
                                 }
                                 else
                                 {
@@ -113,19 +118,21 @@ internal class Program
                 .DefaultValue(reportSettings?.EmployeeFullName ?? "Vasya Pupkin")
                 .PromptStyle("yellow"));
 
+        var formattedEmployeeFullName = employeeFullName.ToLower().Replace(' ', '.');
+
         var employeeEmail = AnsiConsole.Prompt(
             new TextPrompt<string>("2. What's your [green]corporate email[/]?")
-                .DefaultValue(reportSettings?.EmployeeEmail ?? "vasya.pupkin@google.com")
+                .DefaultValue(reportSettings?.EmployeeEmail ?? $"{formattedEmployeeFullName}@google.com")
                 .PromptStyle("yellow"));
 
         var employeePosition = AnsiConsole.Prompt(
             new TextPrompt<string>("3. What's your [green]job position[/]?")
-                .DefaultValue(reportSettings?.EmployeePosition ?? "Software Engineer")
+                .DefaultValue(reportSettings?.EmployeeJobPosition ?? "Software Engineer")
                 .PromptStyle("yellow"));
 
         var employeeFolderPath = AnsiConsole.Prompt(
             new TextPrompt<string>("4. What's your [green]remote folder[/]?")
-                .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{employeeFullName.ToLower().Replace(' ', '.')}")
+                .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{formattedEmployeeFullName}")
                 .PromptStyle("yellow"));
 
         var controlerFullName = AnsiConsole.Prompt(
@@ -135,7 +142,7 @@ internal class Program
 
         var controlerPosition = AnsiConsole.Prompt(
             new TextPrompt<string>("6. What's your [green]controler job position[/]?")
-                .DefaultValue(reportSettings?.ControlerFullName ?? "Dir Software Engineer")
+                .DefaultValue(reportSettings?.ControlerJobPosition ?? "Dir Software Engineer")
                 .PromptStyle("yellow"));
 
         var projectName = AnsiConsole.Prompt(
@@ -161,10 +168,10 @@ internal class Program
         {
             EmployeeEmail = employeeEmail,
             EmployeeFullName = employeeFullName,
-            EmployeePosition = employeePosition,
+            EmployeeJobPosition = employeePosition,
             EmployeeFolderName = employeeFolderPath,
             ControlerFullName = controlerFullName,
-            ControlerPosition = controlerPosition,
+            ControlerJobPosition = controlerPosition,
             ProjectName = projectName,
             ProjectAdoOrganizationName = projectAdoOrganizationName,
             RapidApiKey = rapidApiKey
@@ -172,6 +179,20 @@ internal class Program
 
         var initResult = await newReportSettings.SaveAsync(fileInfo.ToString(), cancellationToken);
         return initResult.ToResult();
+    }
+
+    private static async Task<Result> RunAsync(ReportSettings reportSettings, ProgressContext progressContext,
+        CancellationToken cancellationToken)
+    {
+        var reportsGenerator = new IReportGenerator[]
+        {
+            new CommitsHistoryReportGenerator(),
+            new HtmlReportGenerator()
+        };
+
+        var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
+        var reportResult = await reportGenerator.Generate(reportSettings, progressContext, cancellationToken);
+        return reportResult;
     }
 
     private static async Task<Result<ReportSettings>> LoadReportSettingsAsync(FileInfo fileInfo, CancellationToken cancellationToken)
@@ -214,20 +235,6 @@ internal class Program
                 .PromptStyle("yellow"));
 
         return reportSettings!;
-    }
-
-    private static async Task<Result> RunAsync(ReportSettings reportSettings, ProgressContext progressContext,
-        CancellationToken cancellationToken)
-    {
-        var reportsGenerator = new IReportGenerator[]
-        {
-            new CommitsHistoryReportGenerator(),
-            new HtmlReportGenerator()
-        };
-
-        var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
-        var reportResult = await reportGenerator.Generate(reportSettings, progressContext, cancellationToken);
-        return reportResult;
     }
 
     private static Result Initialize(CancellationToken cancellationToken)
