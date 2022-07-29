@@ -22,7 +22,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
         if (commitsHistory.ValueOrDefault.Length == 0)
         {
-            return commitsHistory.ToResult();
+            return Result.Fail("Sorry, you don't have commit history.");
         }
 
         var saveCommitsHistoryTask = progressContext.AddTask("[green]Saving commits history in a report file.[/]");
@@ -53,7 +53,8 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
                 commitHistoryBuilder.AppendLine($"PROJECT: {repository}:");
                 commitHistoryBuilder.AppendLine();
-                commitHistoryBuilder.AppendJoin(Environment.NewLine, commitsHistory.Select(c => $"{c.CommitId[..7]}, {c.Author.Name}, {c.Author.Date:yyyy-MM-dd}, {c.Comment}"));
+                commitHistoryBuilder.AppendJoin(Environment.NewLine,
+                    commitsHistory.Select(c => $"{c.CommitId[..7]}, {c.Author.Name}, {c.Author.Date:yyyy-MM-dd}, {c.Comment}"));
                 commitHistoryBuilder.AppendLine();
                 commitHistoryBuilder.AppendLine(delimiterLine);
                 commitHistoryBuilder.AppendLine();
@@ -93,9 +94,11 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 return client.ToResult();
             }
 
-            var firstDate = DatetimeHelper.GetFirstDateOfMonth();
-            var lastDate = DatetimeHelper.GetLastDateOfMonth();
+            var fromDate = DatetimeHelper.GetFirstDateOfMonth().ToString(CultureInfo.InvariantCulture);
+            var toDate = DatetimeHelper.GetLastDateOfMonth().ToString(CultureInfo.InvariantCulture);
+
             var allCommitsHistory = new Dictionary<string, IEnumerable<GitCommitRef>>();
+            var commitsHistoryErrors = new List<IError>();
 
             var repositories = await client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken);
             var traversingCommitsTask = progressContext.AddTask("[green]Getting history of commits.[/]", maxValue: repositories.Count);
@@ -111,15 +114,16 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                         {
                             VersionType = GitVersionType.Branch,
                             VersionOptions = GitVersionOptions.None,
-                            Version = "main"
+                            Version = repository.DefaultBranch?.Split('/').LastOrDefault("main")
                         },
                         Author = credentials.Value.Account,
-                        FromDate = firstDate.ToString(),
-                        ToDate = lastDate.ToString()
+                        FromDate = fromDate,
+                        ToDate = toDate
                     },
                     cancellationToken: cancellationToken));
                 if (repoCommitsHistory.IsFailed)
                 {
+                    commitsHistoryErrors.AddRange(repoCommitsHistory.Errors);
                     continue;
                 }
 
@@ -127,6 +131,11 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 {
                     allCommitsHistory.Add(repository.Name, repoCommitsHistory.Value);
                 }
+            }
+
+            if (allCommitsHistory.Count == 0 && commitsHistoryErrors.Count > 0)
+            {
+                return Result.Fail($"Failed with getting history of commits.").WithErrors(commitsHistoryErrors);
             }
 
             return Result.Ok(allCommitsHistory);
