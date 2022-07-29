@@ -47,11 +47,11 @@ internal class HtmlReportGenerator : IReportGenerator
                 absences_days = settings.AbsencesDays,
                 project_name = settings.ProjectName,
                 employee_fullname = settings.EmployeeFullName,
-                employee_position = settings.EmployeePosition,
+                employee_job_position = settings.EmployeeJobPosition,
                 employee_commits_path =
                     @$"{settings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month:00}\Commits.txt",
                 controler_fullname = settings.ControlerFullName,
-                controler_position = settings.ControlerPosition,
+                controler_job_position = settings.ControlerJobPosition,
             });
 
             return Result.Ok(htmlReport);
