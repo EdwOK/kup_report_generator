@@ -1,11 +1,11 @@
 ﻿using System.CommandLine;
 using System.Globalization;
+using CliWrap;
 using FluentResults;
 using KUPReportGenerator.CommandLine;
 using KUPReportGenerator.Generators;
 using KUPReportGenerator.Helpers;
 using Spectre.Console;
-using CliWrap;
 
 namespace KUPReportGenerator;
 
