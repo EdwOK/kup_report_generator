@@ -36,27 +36,7 @@ internal class Program
                             return;
                         }
 
-                        Result? result = null;
-
-                        await AnsiConsole.Progress()
-                            .AutoClear(true)
-                            .Columns(new ProgressColumn[]
-                            {
-                                new TaskDescriptionColumn(),
-                                new ProgressBarColumn(),
-                                new PercentageColumn(),
-                                new RemainingTimeColumn()
-                            })
-                            .StartAsync(async progressContext =>
-                            {
-                                result = await RunAsync(reportSettings.Value, progressContext, cancellationToken);
-                            });
-
-                        if (result is null)
-                        {
-                            return;
-                        }
-
+                        var result = await RunAsync(reportSettings.Value, cancellationToken);
                         if (result.IsSuccess)
                         {
                             AnsiConsole.MarkupLine("[green]Done[/]. Reports are successfully generated: ");
@@ -70,7 +50,7 @@ internal class Program
                                     .ExecuteAsync(cancellationToken);
                             }
                         }
-                        else if (result.IsFailed)
+                        else if (HasErrors(result))
                         {
                             WriteErrors(result);
                         }
@@ -82,7 +62,7 @@ internal class Program
                         {
                             AnsiConsole.MarkupLine("[green]Done[/]. Now you can run.");
                         }
-                        else
+                        else if (HasErrors(result))
                         {
                             WriteErrors(result);
                         }
@@ -203,18 +183,30 @@ internal class Program
         return saveNewReportSettings.ToResult();
     }
 
-    private static async Task<Result> RunAsync(ReportSettings reportSettings, ProgressContext progressContext,
-        CancellationToken cancellationToken)
+    private static async Task<Result> RunAsync(ReportSettings reportSettings, CancellationToken cancellationToken)
     {
-        var reportsGenerator = new IReportGenerator[]
-        {
-            new CommitsHistoryReportGenerator(),
-            new HtmlReportGenerator()
-        };
+        var result = await AnsiConsole.Progress()
+            .AutoClear(true)
+            .Columns(new ProgressColumn[]
+            {
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new RemainingTimeColumn()
+            })
+            .StartAsync(async progressContext =>
+            {
+                var reportsGenerator = new IReportGenerator[]
+                {
+                    new CommitsHistoryReportGenerator(),
+                    new HtmlReportGenerator()
+                };
 
-        var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
-        var reportResult = await reportGenerator.Generate(reportSettings, progressContext, cancellationToken);
-        return reportResult;
+                var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
+                return await reportGenerator.Generate(reportSettings, progressContext, cancellationToken);
+            });
+
+        return result;
     }
 
     private static async Task<Result<ReportSettings>> LoadReportSettingsAsync(FileInfo fileInfo, CancellationToken cancellationToken)
@@ -280,6 +272,9 @@ internal class Program
             return Result.Fail(new Error($"Initialization failed. Could't create output directory: {Constants.OutputDirectory}.").CausedBy(exc));
         }
     }
+
+    private static bool HasErrors(Result result) =>
+        result.IsFailed && !result.HasException<OperationCanceledException>(e => e.CancellationToken.IsCancellationRequested);
 
     private static void WriteErrors(Result result)
     {
