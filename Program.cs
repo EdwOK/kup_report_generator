@@ -45,8 +45,8 @@ internal class Program
 
                             if (EnvironmentUtils.IsWindowsPlatform())
                             {
-                                await Cli.Wrap("start")
-                                    .WithArguments(Constants.OutputDirectory)
+                                await Cli.Wrap("cmd")
+                                    .WithArguments($"/c start {Constants.OutputDirectory}")
                                     .ExecuteAsync(cancellationToken);
                             }
                         }
