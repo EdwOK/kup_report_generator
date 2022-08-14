@@ -19,7 +19,7 @@ internal static class CredentialManager
         }
         else
         {
-            return Result.Fail("Platform not supported.");
+            return Result.Fail("Current OS platform not supported.");
         }
     }
 

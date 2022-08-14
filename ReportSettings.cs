@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentResults;
@@ -9,28 +8,28 @@ namespace KUPReportGenerator;
 
 public record ReportSettings
 {
-    [Required]
+    [JsonInclude]
     public string EmployeeFullName { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string EmployeeEmail { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string EmployeeJobPosition { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string EmployeeFolderName { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string ControlerFullName { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string ControlerJobPosition { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string ProjectName { get; set; } = null!;
 
-    [Required]
+    [JsonInclude]
     public string ProjectAdoOrganizationName { get; set; } = null!;
 
     [JsonIgnore]
@@ -52,7 +51,7 @@ public record ReportSettings
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error("Could not save report settings.").CausedBy(exc));
+            return Result.Fail(new Error("Couldn't save the report settings file.").CausedBy(exc));
         }
 
         return Result.Ok(this);
@@ -73,15 +72,14 @@ public record ReportSettings
             await using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(reportSettingsText.Value));
             reportSettings = await JsonSerializer.DeserializeAsync(memoryStream, cancellationToken: cancellationToken,
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
+            if (reportSettings is null)
+            {
+                throw new Exception();
+            }
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error("Invalid report settings.").CausedBy(exc));
-        }
-
-        if (reportSettings is null)
-        {
-            return Result.Fail("Invalid report settings.");
+            return Result.Fail(new Error("Couldn't read the report settings file.").CausedBy(exc));
         }
 
         return Result.Ok(reportSettings);
