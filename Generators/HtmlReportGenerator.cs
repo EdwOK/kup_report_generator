@@ -8,9 +8,10 @@ namespace KUPReportGenerator.Generators;
 
 internal class HtmlReportGenerator : IReportGenerator
 {
-    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken)
+    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext,
+        CancellationToken cancellationToken)
     {
-        var generateHtmlReportTask = progressContext.AddTask("[green]Generate HTML KUP report.[/]");
+        var generateHtmlReportTask = progressContext.AddTask("[green]Generating html report.[/]");
         generateHtmlReportTask.Increment(50.0);
         var htmlReport = await GenerateHtmlReport(reportSettings, cancellationToken);
         generateHtmlReportTask.Increment(50.0);
@@ -19,14 +20,15 @@ internal class HtmlReportGenerator : IReportGenerator
             return htmlReport.ToResult();
         }
 
-        var saveReportTask = progressContext.AddTask("[green]Saving KUP in a report file.[/]");
+        var saveReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
         saveReportTask.Increment(50.0);
         var saveResult = await FileHelper.SaveAsync(Constants.ReportFilePath, htmlReport.Value, cancellationToken);
         saveReportTask.Increment(50.0);
         return saveResult;
     }
 
-    private static async Task<Result<string>> GenerateHtmlReport(ReportSettings settings, CancellationToken cancellationToken)
+    private static async Task<Result<string>> GenerateHtmlReport(ReportSettings settings,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -58,8 +60,7 @@ internal class HtmlReportGenerator : IReportGenerator
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed with generation report for {Constants.ReportTemplateFilePath}.")
-                .CausedBy(exc));
+            return Result.Fail(new Error($"Failed to generate html report.").CausedBy(exc));
         }
     }
 }

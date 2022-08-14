@@ -12,7 +12,8 @@ namespace KUPReportGenerator.Generators;
 
 internal class CommitsHistoryReportGenerator : IReportGenerator
 {
-    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken)
+    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext,
+        CancellationToken cancellationToken)
     {
         var commitsHistory = await GetCommitsHistory(reportSettings, progressContext, cancellationToken);
         if (commitsHistory.IsFailed)
@@ -22,10 +23,10 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
         if (commitsHistory.ValueOrDefault.Length == 0)
         {
-            return Result.Fail("Sorry, you don't have commit history.");
+            return Result.Fail("Commits history is empty.");
         }
 
-        var saveCommitsHistoryTask = progressContext.AddTask("[green]Saving commits history in a report file.[/]");
+        var saveCommitsHistoryTask = progressContext.AddTask("[green]Saving commits history in the report file.[/]");
         saveCommitsHistoryTask.Increment(50.0);
         var saveResult = await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, commitsHistory.Value, cancellationToken);
         saveCommitsHistoryTask.Increment(50.0);
@@ -65,14 +66,13 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             return Result.Ok(resultBuilder.ToString());
         }
         catch (Exception exc)
-
         {
-            return Result.Fail(new Error("Failed with generation history of commits.").CausedBy(exc));
+            return Result.Fail(new Error("Failed to generate commits history.").CausedBy(exc));
         }
     }
 
-    private static async Task<Result<Dictionary<string, IEnumerable<GitCommitRef>>>> GetAdoCommitsHistory(ReportSettings reportSettings,
-        ProgressContext progressContext, CancellationToken cancellationToken)
+    private static async Task<Result<Dictionary<string, IEnumerable<GitCommitRef>>>> GetAdoCommitsHistory(
+        ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken)
     {
         try
         {
@@ -85,7 +85,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 return credentials.ToResult();
             }
 
-            var connectionTask = progressContext.AddTask("[green]Connecting to the Azure DevOps Git API services.[/]");
+            var connectionTask = progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
             var client = TryConnectToAdo(credentials.Value, reportSettings.ProjectAdoOrganizationName, cancellationToken);
             connectionTask.Increment(50.0);
@@ -94,17 +94,22 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 return client.ToResult();
             }
 
+            var repositories = await Result.Try(() => client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken));
+            if (repositories.IsFailed)
+            {
+                return repositories.ToResult();
+            }
+
             var fromDate = DatetimeHelper.GetFirstDateOfMonth().ToString(CultureInfo.InvariantCulture);
             var toDate = DatetimeHelper.GetLastDateOfMonth().ToString(CultureInfo.InvariantCulture);
-
             var allCommitsHistory = new Dictionary<string, IEnumerable<GitCommitRef>>();
             var commitsHistoryErrors = new List<IError>();
 
-            var repositories = await client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken);
-            var traversingCommitsTask = progressContext.AddTask("[green]Getting history of commits.[/]", maxValue: repositories.Count);
+            var traversingCommitsTask = progressContext.AddTask("[green]Getting history of commits.[/]", maxValue: repositories.Value.Count);
 
-            foreach (var repository in repositories)
+            foreach (var repository in repositories.Value)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 traversingCommitsTask.Increment(1.0);
 
                 var repoCommitsHistory = await Result.Try(() => client.Value.GetCommitsAsync(repository.Id,
@@ -135,18 +140,19 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
             if (allCommitsHistory.Count == 0 && commitsHistoryErrors.Count > 0)
             {
-                return Result.Fail($"Failed with getting history of commits.").WithErrors(commitsHistoryErrors);
+                return Result.Fail($"Failed to get commits history.").WithErrors(commitsHistoryErrors);
             }
 
             return Result.Ok(allCommitsHistory);
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed with getting history of commits.").CausedBy(exc));
+            return Result.Fail(new Error($"Failed to get commits history.").CausedBy(exc));
         }
     }
 
-    private static Result<GitHttpClient> TryConnectToAdo(ICredential credentials, string employeeOrganization, CancellationToken cancellationToken)
+    private static Result<GitHttpClient> TryConnectToAdo(ICredential credentials, string employeeOrganization,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -157,7 +163,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed with connection to the Azure DevOps API service.").CausedBy(exc));
+            return Result.Fail(new Error($"Failed to connect to the Azure DevOps API.").CausedBy(exc));
         }
     }
 
@@ -187,7 +193,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             return credentials;
         }
 
-        return Result.Fail(new Error("Could not find git credentials.")
+        return Result.Fail(new Error("Failed to find git credentials.")
             .WithMetadata("EmployeeEmail", employeeEmail)
             .WithMetadata("EmployeeOrganization", employeeOrganization));
     }

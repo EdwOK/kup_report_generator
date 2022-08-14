@@ -14,37 +14,41 @@ internal class RapidApi : IDisposable
     {
         _httpClient = new HttpClient
         {
-            BaseAddress = new Uri("https://working-days.p.rapidapi.com")
+            BaseAddress = new Uri("https://working-days.p.rapidapi.com"),
+            DefaultRequestHeaders =
+            {
+                ExpectContinue = true
+            }
         };
-        _httpClient.DefaultRequestHeaders.ExpectContinue = false;
         _httpClient.DefaultRequestHeaders.Accept.Clear();
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         _httpClient.DefaultRequestHeaders.Add("X-RapidAPI-Host", "working-days.p.rapidapi.com");
         _httpClient.DefaultRequestHeaders.Add("X-RapidAPI-Key", apiKey);
     }
 
-    public async Task<Result<ushort>> GetWorkingDays(string countryCode = "PL", CancellationToken cancellationToken = default)
+    public async Task<Result<ushort>> GetMonthlyWorkingDays(string countryCode = "PL", CancellationToken cancellationToken = default)
     {
-        var startDate = DatetimeHelper.GetFirstDateOfMonth();
-        var lastDate = DatetimeHelper.GetLastDateOfMonth();
-
-        var jsonNode = await Result.Try(() =>
-            _httpClient.GetFromJsonAsync<JsonNode>(
-                $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={lastDate:yyyy-MM-dd}",
-                cancellationToken));
-        if (jsonNode.IsFailed)
+        try
         {
-            return jsonNode.ToResult();
-        }
+            var startDate = DatetimeHelper.GetFirstDateOfMonth();
+            var lastDate = DatetimeHelper.GetLastDateOfMonth();
 
-        var workingDaysResult = Result.Try(() => jsonNode.ValueOrDefault?["result"]?["working_days"]?["total"]?.ToString());
-        if (!ushort.TryParse(workingDaysResult.ValueOrDefault, out var workingDays))
+            var jsonNode = await _httpClient.GetFromJsonAsync<JsonNode>(
+                $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={lastDate:yyyy-MM-dd}", cancellationToken);
+
+            var workingDaysResult = jsonNode?["result"]?["working_days"]?["total"]?.ToString();
+            if (!ushort.TryParse(workingDaysResult, out var workingDays))
+            {
+                throw new Exception();
+            }
+
+            return Result.Ok(workingDays);
+
+        }
+        catch (Exception exc)
         {
-            return Result.Fail("Couldn't get working days from the API error, please check the response.")
-                .WithErrors(workingDaysResult.Errors);
+            return Result.Fail(new Error("Failed to get working days from the Rapid API.").CausedBy(exc));
         }
-
-        return Result.Ok(workingDays);
     }
 
     public void Dispose()

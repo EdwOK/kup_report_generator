@@ -13,15 +13,15 @@ internal static class FileHelper
                 return Result.Ok();
             }
 
-            return Result.Fail($"{filePath} could not be found.");
+            return Result.Fail($"{filePath} couldn't be found.");
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed check for existence of {filePath}.").CausedBy(exc));
+            return Result.Fail(new Error($"Failed to verify the existence of {filePath}.").CausedBy(exc));
         }
     }
 
-    public static async Task<Result<string>> ReadAsync(string filePath, CancellationToken cancellationToken = default)
+    public static async Task<Result<string>> ReadAsync(string filePath, CancellationToken cancellationToken)
     {
         try
         {
@@ -38,11 +38,11 @@ internal static class FileHelper
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed with reading {filePath}.").CausedBy(exc));
+            return Result.Fail(new Error($"Failed to read {filePath}.").CausedBy(exc));
         }
     }
 
-    public static async Task<Result> SaveAsync(string filePath, string text, CancellationToken cancellationToken = default)
+    public static async Task<Result> SaveAsync(string filePath, string text, CancellationToken cancellationToken)
     {
         try
         {
@@ -53,7 +53,7 @@ internal static class FileHelper
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed with creation {filePath}.").CausedBy(exc));
+            return Result.Fail(new Error($"Failed to save {filePath}.").CausedBy(exc));
         }
     }
 }

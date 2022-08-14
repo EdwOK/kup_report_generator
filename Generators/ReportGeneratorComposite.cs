@@ -10,7 +10,8 @@ public class ReportGeneratorComposite : IReportGenerator
     public ReportGeneratorComposite(IEnumerable<IReportGenerator> reportGenerators) =>
         _reportGenerators = reportGenerators;
 
-    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken)
+    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext,
+        CancellationToken cancellationToken)
     {
         foreach (var reportGenerator in _reportGenerators)
         {
