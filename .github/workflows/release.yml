@@ -17,7 +17,7 @@ jobs:
       - name: Build
         run: dotnet build -c Release
       - name: Publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/publish -r win-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=true --self-contained=true
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/publish -r win-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
       - name: Archive Artifact
         run: powershell Compress-Archive -Path ${{env.DOTNET_ROOT}}\publish\* -DestinationPath ${{env.DOTNET_ROOT}}\kup_report_generator_win_x64.zip
       - name: Upload Release Asset
