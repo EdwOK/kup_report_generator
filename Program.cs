@@ -9,7 +9,7 @@ using Spectre.Console;
 
 namespace KUPReportGenerator;
 
-internal class Program
+internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
@@ -19,53 +19,53 @@ internal class Program
             AnsiConsole.MarkupLine("Started, Press [green]Ctrl-C[/] to stop.");
 
             var rootCommand = CommandLineBuilder.BuildRootCommand(
-                async (FileInfo fileInfo, CancellationToken cancellationToken) =>
+                async (fileInfo, cancellationToken) =>
                 {
                     var action = await new SelectionPrompt<string>()
                         .Title("What do you want [green]to do[/]?")
                         .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
-                        .AddChoices(new[] { nameof(CommandLineActions.Run), nameof(CommandLineActions.Install) })
+                        .AddChoices(nameof(CommandLineActions.Run), nameof(CommandLineActions.Install))
                         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-                    if (action is nameof(CommandLineActions.Run))
+                    switch (action)
                     {
-                        var reportSettings = await LoadReportSettingsAsync(fileInfo, cancellationToken);
-                        if (reportSettings.IsFailed)
-                        {
-                            WriteErrors(reportSettings.ToResult());
-                            return;
-                        }
-
-                        var result = await RunAsync(reportSettings.Value, cancellationToken);
-                        if (result.IsSuccess)
-                        {
-                            AnsiConsole.MarkupLine("[green]Done[/]. Reports are successfully generated: ");
-                            AnsiConsole.MarkupLine($"- [green]{Constants.ReportFilePath}[/]");
-                            AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
-
-                            if (EnvironmentUtils.IsWindowsPlatform())
+                        case nameof(CommandLineActions.Run):
                             {
-                                await Cli.Wrap("cmd")
-                                    .WithArguments($"/c start {Constants.OutputDirectory}")
-                                    .ExecuteAsync(cancellationToken);
+                                var result = await RunAsync(fileInfo, cancellationToken);
+                                if (result.IsSuccess)
+                                {
+                                    AnsiConsole.MarkupLine("[green]Done[/]. Reports are successfully generated: ");
+                                    AnsiConsole.MarkupLine($"- [green]{Constants.ReportFilePath}[/]");
+                                    AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
+
+                                    if (EnvironmentUtils.IsWindowsPlatform())
+                                    {
+                                        await Cli.Wrap("cmd")
+                                            .WithArguments($"/c start {Constants.OutputDirectory}")
+                                            .ExecuteAsync(cancellationToken);
+                                    }
+                                }
+                                else if (HasErrors(result))
+                                {
+                                    WriteErrors(result);
+                                }
+
+                                break;
                             }
-                        }
-                        else if (HasErrors(result))
-                        {
-                            WriteErrors(result);
-                        }
-                    }
-                    else if (action is nameof(CommandLineActions.Install))
-                    {
-                        var result = await InstallAsync(fileInfo, cancellationToken);
-                        if (result.IsSuccess)
-                        {
-                            AnsiConsole.MarkupLine("[green]Done[/]. Now you can run.");
-                        }
-                        else if (HasErrors(result))
-                        {
-                            WriteErrors(result);
-                        }
+                        case nameof(CommandLineActions.Install):
+                            {
+                                var result = await InstallAsync(fileInfo, cancellationToken);
+                                if (result.IsSuccess)
+                                {
+                                    AnsiConsole.MarkupLine("[green]Done[/]. Now you can run.");
+                                }
+                                else if (HasErrors(result))
+                                {
+                                    WriteErrors(result);
+                                }
+
+                                break;
+                            }
                     }
                 });
 
@@ -79,6 +79,80 @@ internal class Program
         }
     }
 
+    private static async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationToken)
+    {
+        var initialize = Initialize(cancellationToken);
+        if (initialize.IsFailed)
+        {
+            return initialize;
+        }
+
+        var reportSettings = await ReportSettings.OpenAsync(fileInfo.ToString(), cancellationToken);
+        if (reportSettings.IsFailed)
+        {
+            return reportSettings.ToResult();
+        }
+        
+        var currentMonthName = DatetimeHelper.GetCurrentMonthName();
+        var currentMonthWorkingDays = await GetCurrentMonthWorkingDays(reportSettings.Value, cancellationToken);
+        if (currentMonthWorkingDays.IsFailed)
+        {
+            return currentMonthWorkingDays.ToResult();
+        }
+
+        reportSettings.Value.WorkingDays =
+            await new TextPrompt<ushort>($"How many [green]working days[/] are there in {currentMonthName}?")
+                .DefaultValue(reportSettings.Value.WorkingDays ?? currentMonthWorkingDays.Value)
+                .PromptStyle("yellow")
+                .ShowAsync(AnsiConsole.Console, cancellationToken);
+
+        reportSettings.Value.AbsencesDays =
+            await new TextPrompt<ushort>($"How many [green]absences days[/] are there in {currentMonthName}?")
+                .DefaultValue(reportSettings?.Value.AbsencesDays ?? 0)
+                .PromptStyle("yellow")
+                .ShowAsync(AnsiConsole.Console, cancellationToken);
+
+        return await AnsiConsole.Progress()
+            .AutoClear(true)
+            .Columns(
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new RemainingTimeColumn())
+            .StartAsync(async progressContext =>
+            {
+                var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
+                {
+                    new CommitsHistoryReportGenerator(),
+                    new HtmlReportGenerator()
+                });
+                return await reportGenerator.Generate(reportSettings!.Value, progressContext, cancellationToken);
+            });
+    }
+
+    private static async Task<Result<ushort>> GetCurrentMonthWorkingDays(ReportSettings reportSettings,
+        CancellationToken cancellationToken)
+    {
+        const ushort defaultWorkingDays = 21;
+        if (string.IsNullOrEmpty(reportSettings.RapidApiKey))
+        {
+            return defaultWorkingDays;
+        }
+
+        using var rapidApi = new RapidApi(reportSettings.RapidApiKey);
+        
+        var startDate = DatetimeHelper.GetFirstDateOfCurrentMonth();
+        var endDate = DatetimeHelper.GetLastDateOfCurrentMonth();
+
+        var workingDaysResult = await rapidApi.GetMonthlyWorkingDays(startDate, endDate, cancellationToken: cancellationToken);
+        if (workingDaysResult.IsFailed)
+        {
+            return workingDaysResult.ToResult();
+        }
+
+        return workingDaysResult.Value;
+    }
+
     private static async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellationToken)
     {
         ReportSettings? reportSettings = null;
@@ -86,8 +160,9 @@ internal class Program
         var installationPrompt = true;
         if (fileInfo.Exists)
         {
-            installationPrompt = await new ConfirmationPrompt("The tool is already installed. Do you want to [green]re-install[/]?")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+            installationPrompt =
+                await new ConfirmationPrompt("The tool is already installed. Do you want to [green]re-install[/]?")
+                    .ShowAsync(AnsiConsole.Console, cancellationToken);
 
             var reportSettingsResult = await ReportSettings.OpenAsync(fileInfo.ToString(), cancellationToken);
             if (reportSettingsResult.IsFailed)
@@ -105,62 +180,55 @@ internal class Program
 
         AnsiConsole.MarkupLine("Okay. Let's follow step by step and please be attentive: ");
 
-        var employeeFullName =
-            await new TextPrompt<string>("1. What's your [green]name and surname[/]?")
-                .DefaultValue(reportSettings?.EmployeeFullName ?? "Vasya Pupkin")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var employeeFullName = await new TextPrompt<string>("1. What's your [green]name and surname[/]?")
+            .DefaultValue(reportSettings?.EmployeeFullName ?? "Vasya Pupkin")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
         var formattedEmployeeFullName = employeeFullName.ToLower().Replace(' ', '.');
 
-        var employeeEmail =
-            await new TextPrompt<string>("2. What's your [green]corporate email[/]?")
-                .DefaultValue(reportSettings?.EmployeeEmail ?? $"{formattedEmployeeFullName}@google.com")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var employeeEmail = await new TextPrompt<string>("2. What's your [green]corporate email[/]?")
+            .DefaultValue(reportSettings?.EmployeeEmail ?? $"{formattedEmployeeFullName}@google.com")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        var employeePosition =
-            await new TextPrompt<string>("3. What's your [green]job position[/]?")
-                .DefaultValue(reportSettings?.EmployeeJobPosition ?? "Software Engineer")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var employeePosition = await new TextPrompt<string>("3. What's your [green]job position[/]?")
+            .DefaultValue(reportSettings?.EmployeeJobPosition ?? "Software Engineer")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        var employeeFolderPath =
-            await new TextPrompt<string>("4. What's your [green]remote folder[/]?")
-                .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{formattedEmployeeFullName}")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var employeeFolderPath = await new TextPrompt<string>("4. What's your [green]remote folder[/]?")
+            .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{formattedEmployeeFullName}")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        var controlerFullName =
-            await new TextPrompt<string>("5. What's your [green]controler name and surname[/]?")
-                .DefaultValue(reportSettings?.ControlerFullName ?? "Petya Galupkin")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var controlerFullName = await new TextPrompt<string>("5. What's your [green]controler name and surname[/]?")
+            .DefaultValue(reportSettings?.ControlerFullName ?? "Petya Galupkin")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        var controlerPosition =
-            await new TextPrompt<string>("6. What's your [green]controler job position[/]?")
-                .DefaultValue(reportSettings?.ControlerJobPosition ?? "Dir Software Engineer")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var controlerPosition = await new TextPrompt<string>("6. What's your [green]controler job position[/]?")
+            .DefaultValue(reportSettings?.ControlerJobPosition ?? "Dir Software Engineer")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        var projectName =
-            await new TextPrompt<string>("7. What's your [green]project name[/]?")
-                .DefaultValue(reportSettings?.ProjectName ?? "GaleraProject 1.0.0")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var projectName = await new TextPrompt<string>("7. What's your [green]project name[/]?")
+            .DefaultValue(reportSettings?.ProjectName ?? "GaleraProject 1.0.0")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        var projectAdoOrganizationName =
-            await new TextPrompt<string>("8. What's your [green]organization name in the Azure DevOps[/]?")
-                .DefaultValue(reportSettings?.ProjectAdoOrganizationName ?? "galera-company")
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
+        var projectAdoOrganizationName = await new TextPrompt<string>("8. What's your [green]organization name in the Azure DevOps[/]?")
+            .DefaultValue(reportSettings?.ProjectAdoOrganizationName ?? "galera-company")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
 
         string? rapidApiKey = null;
         if (await new ConfirmationPrompt("9. Do you want to automatically get the number of working days in a month?")
                 .ShowAsync(AnsiConsole.Console, cancellationToken))
         {
             rapidApiKey =
-                await new TextPrompt<string>("10. Great. Go to the [blue]https://rapidapi.com/joursouvres-api/api/working-days/[/] -> sign up -> copy the [green]`X-RapidAPI-Key`[/].")
+                await new TextPrompt<string>(
+                        "10. Great. Go to the [blue]https://rapidapi.com/joursouvres-api/api/working-days/[/] -> sign up -> copy the [green]`X-RapidAPI-Key`[/].")
                     .DefaultValue(reportSettings?.RapidApiKey ?? "")
                     .PromptStyle("yellow")
                     .ShowAsync(AnsiConsole.Console, cancellationToken);
@@ -182,77 +250,7 @@ internal class Program
         var saveNewReportSettings = await newReportSettings.SaveAsync(fileInfo.ToString(), cancellationToken);
         return saveNewReportSettings.ToResult();
     }
-
-    private static async Task<Result> RunAsync(ReportSettings reportSettings, CancellationToken cancellationToken)
-    {
-        var result = await AnsiConsole.Progress()
-            .AutoClear(true)
-            .Columns(new ProgressColumn[]
-            {
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new RemainingTimeColumn()
-            })
-            .StartAsync(async progressContext =>
-            {
-                var reportsGenerator = new IReportGenerator[]
-                {
-                    new CommitsHistoryReportGenerator(),
-                    new HtmlReportGenerator()
-                };
-
-                var reportGenerator = new ReportGeneratorComposite(reportsGenerator);
-                return await reportGenerator.Generate(reportSettings, progressContext, cancellationToken);
-            });
-
-        return result;
-    }
-
-    private static async Task<Result<ReportSettings>> LoadReportSettingsAsync(FileInfo fileInfo, CancellationToken cancellationToken)
-    {
-        var initialize = Initialize(cancellationToken);
-        if (initialize.IsFailed)
-        {
-            return initialize;
-        }
-
-        var reportSettings = await ReportSettings.OpenAsync(fileInfo.ToString(), cancellationToken);
-        if (reportSettings.IsFailed)
-        {
-            return reportSettings.ToResult();
-        }
-
-        var targetMonthName = DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
-        ushort targetWorkingDays = 21;
-
-        if (!string.IsNullOrEmpty(reportSettings!.Value.RapidApiKey))
-        {
-            using var rapidApi = new RapidApi(reportSettings.Value.RapidApiKey);
-            var workingDaysResult = await rapidApi.GetMonthlyWorkingDays(cancellationToken: cancellationToken);
-            if (workingDaysResult.IsFailed)
-            {
-                return workingDaysResult.ToResult();
-            }
-
-            targetWorkingDays = workingDaysResult.Value;
-        }
-
-        reportSettings.Value.WorkingDays =
-            await new TextPrompt<ushort>($"How many [green]working days[/] are there in {targetMonthName}?")
-                .DefaultValue(reportSettings.Value.WorkingDays ?? targetWorkingDays)
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
-
-        reportSettings.Value.AbsencesDays =
-            await new TextPrompt<ushort>($"How many [green]absences days[/] are there in {targetMonthName}?")
-                .DefaultValue(reportSettings?.Value.AbsencesDays ?? 0)
-                .PromptStyle("yellow")
-                .ShowAsync(AnsiConsole.Console, cancellationToken);
-
-        return reportSettings!;
-    }
-
+    
     private static Result Initialize(CancellationToken cancellationToken)
     {
         try
@@ -269,12 +267,15 @@ internal class Program
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Initialization failed. Could't create output directory: {Constants.OutputDirectory}.").CausedBy(exc));
+            return Result.Fail(
+                new Error($"Initialization failed. Could\'t create output directory: {Constants.OutputDirectory}.")
+                    .CausedBy(exc));
         }
     }
 
     private static bool HasErrors(Result result) =>
-        result.IsFailed && !result.HasException<OperationCanceledException>(e => e.CancellationToken.IsCancellationRequested);
+        result.IsFailed &&
+        !result.HasException<OperationCanceledException>(e => e.CancellationToken.IsCancellationRequested);
 
     private static void WriteErrors(Result result)
     {

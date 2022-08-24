@@ -44,14 +44,14 @@ internal class HtmlReportGenerator : IReportGenerator
             var currentDate = DateTime.UtcNow;
             var htmlReport = reportTemplate(new
             {
-                month_name = currentDate.ToString("MMMM", CultureInfo.InvariantCulture),
+                month_name = DatetimeHelper.GetCurrentMonthName(),
                 working_days = settings.WorkingDays,
                 absences_days = settings.AbsencesDays,
                 project_name = settings.ProjectName,
                 employee_fullname = settings.EmployeeFullName,
                 employee_job_position = settings.EmployeeJobPosition,
                 employee_commits_path =
-                    @$"{settings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month:00}\Commits.txt",
+                    @$"{settings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month:00}\{Constants.CommitHistoryFileName}",
                 controler_fullname = settings.ControlerFullName,
                 controler_job_position = settings.ControlerJobPosition,
             });
@@ -60,7 +60,7 @@ internal class HtmlReportGenerator : IReportGenerator
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed to generate html report.").CausedBy(exc));
+            return Result.Fail(new Error("Failed to generate html report.").CausedBy(exc));
         }
     }
 }

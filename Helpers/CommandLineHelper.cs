@@ -4,7 +4,7 @@ namespace KUPReportGenerator.Helpers;
 
 internal static class CommandLineHelper
 {
-    public static readonly Option<FileInfo> SettingsFileOption = new("--settings-file")
+    private static readonly Option<FileInfo> SettingsFileOption = new("--settings-file")
     {
         IsRequired = false,
         Description = "Path to the settings file. Defaults is current directory."
@@ -23,7 +23,7 @@ internal static class CommandLineHelper
                     return;
                 }
 
-                if (Path.GetExtension(token.Value) != ".json")
+                if (Path.GetExtension(token.Value) is not ".json")
                 {
                     result.ErrorMessage = "File settings must be in JSON format.";
                     return;

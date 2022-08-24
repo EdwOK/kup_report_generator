@@ -55,7 +55,8 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 commitHistoryBuilder.AppendLine($"PROJECT: {repository}:");
                 commitHistoryBuilder.AppendLine();
                 commitHistoryBuilder.AppendJoin(Environment.NewLine,
-                    commitsHistory.Select(c => $"{c.CommitId[..7]}, {c.Author.Name}, {c.Author.Date:yyyy-MM-dd}, {c.Comment}"));
+                    commitsHistory.Select(c =>
+                        $"{c.CommitId[..7]}, {c.Author.Name}, {c.Author.Date:yyyy-MM-dd}, {c.Comment}"));
                 commitHistoryBuilder.AppendLine();
                 commitHistoryBuilder.AppendLine(delimiterLine);
                 commitHistoryBuilder.AppendLine();
@@ -87,87 +88,103 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
             var connectionTask = progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
-            var client = TryConnectToAdo(credentials.Value, reportSettings.ProjectAdoOrganizationName, cancellationToken);
+            var client = TryConnectToAdo(credentials.Value, reportSettings.ProjectAdoOrganizationName,
+                cancellationToken);
             connectionTask.Increment(50.0);
             if (client.IsFailed)
             {
                 return client.ToResult();
             }
 
-            var repositories = await Result.Try(() => client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken));
+            var repositories =
+                await Result.Try(() => client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken));
             if (repositories.IsFailed)
             {
                 return repositories.ToResult();
             }
 
-            var fromDate = DatetimeHelper.GetFirstDateOfMonth().ToString(CultureInfo.InvariantCulture);
-            var toDate = DatetimeHelper.GetLastDateOfMonth().ToString(CultureInfo.InvariantCulture);
+            var fromDate = DatetimeHelper.GetFirstDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
+            var toDate = DatetimeHelper.GetLastDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
             var allCommitsHistory = new Dictionary<string, IEnumerable<GitCommitRef>>();
             var commitsHistoryErrors = new List<IError>();
 
-            var traversingCommitsTask = progressContext.AddTask("[green]Getting history of commits.[/]", maxValue: repositories.Value.Count);
+            var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]",
+                maxValue: repositories.Value.Count);
 
-            foreach (var repository in repositories.Value)
+            var commitsHistoryTasks = repositories.Value.Select(ProcessGetCommitsAsync).ToList();
+            while (commitsHistoryTasks.Any())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                traversingCommitsTask.Increment(1.0);
+                commitsHistoryProgressTask.Increment(1.0);
+                
+                var finishedCommitsHistoryTask = await Task.WhenAny(commitsHistoryTasks).WaitAsync(cancellationToken);
+                commitsHistoryTasks.Remove(finishedCommitsHistoryTask);
 
-                var repoCommitsHistory = await Result.Try(() => client.Value.GetCommitsAsync(repository.Id,
-                    new GitQueryCommitsCriteria
-                    {
-                        ItemVersion = new GitVersionDescriptor
-                        {
-                            VersionType = GitVersionType.Branch,
-                            VersionOptions = GitVersionOptions.None,
-                            Version = repository.DefaultBranch?.Split('/').LastOrDefault("main")
-                        },
-                        Author = credentials.Value.Account,
-                        FromDate = fromDate,
-                        ToDate = toDate
-                    },
-                    cancellationToken: cancellationToken));
-                if (repoCommitsHistory.IsFailed)
+                (GitRepository? repository, Result<List<GitCommitRef>>? commitsHistory) = finishedCommitsHistoryTask.Result;
+                if (commitsHistory.IsFailed)
                 {
-                    commitsHistoryErrors.AddRange(repoCommitsHistory.Errors);
+                    commitsHistoryErrors.AddRange(commitsHistory.Errors);
                     continue;
                 }
 
-                if (repoCommitsHistory.Value.Count > 0)
+                if (commitsHistory.Value.Count > 0)
                 {
-                    allCommitsHistory.Add(repository.Name, repoCommitsHistory.Value);
+                    allCommitsHistory.Add(repository.Name, commitsHistory.Value);
                 }
             }
 
             if (allCommitsHistory.Count == 0 && commitsHistoryErrors.Count > 0)
             {
-                return Result.Fail($"Failed to get commits history.").WithErrors(commitsHistoryErrors);
+                return Result.Fail("Failed to get commits history.").WithErrors(commitsHistoryErrors);
             }
 
             return Result.Ok(allCommitsHistory);
+            
+            async Task<(GitRepository, Result<List<GitCommitRef>>)> ProcessGetCommitsAsync(GitRepository repository)
+            {
+                var repoCommitsHistory = await Result.Try(() =>
+                    client?.Value.GetCommitsAsync(repository.Id,
+                        new GitQueryCommitsCriteria
+                        {
+                            ItemVersion = new GitVersionDescriptor
+                            {
+                                VersionType = GitVersionType.Branch,
+                                VersionOptions = GitVersionOptions.None,
+                                Version = repository.DefaultBranch?.Split('/').LastOrDefault("main")
+                            },
+                            Author = credentials?.Value.Account,
+                            FromDate = fromDate,
+                            ToDate = toDate
+                        },
+                        cancellationToken: cancellationToken));
+
+                return (repository, repoCommitsHistory);
+            }
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed to get commits history.").CausedBy(exc));
+            return Result.Fail(new Error("Failed to get commits history.").CausedBy(exc));
         }
     }
 
-    private static Result<GitHttpClient> TryConnectToAdo(ICredential credentials, string employeeOrganization,
+    private static Result<GitHttpClient> TryConnectToAdo(ICredential credentials, string organization,
         CancellationToken cancellationToken)
     {
         try
         {
             var vssCredentials = new VssBasicCredential(credentials.Account, credentials.Password);
-            var connection = new VssConnection(new Uri($"https://dev.azure.com/{employeeOrganization}"), vssCredentials);
+            var connection =
+                new VssConnection(new Uri($"https://dev.azure.com/{organization}"), vssCredentials);
             var client = connection.GetClient<GitHttpClient>(cancellationToken);
             return Result.Ok(client);
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error($"Failed to connect to the Azure DevOps API.").CausedBy(exc));
+            return Result.Fail(new Error("Failed to connect to the Azure DevOps API.").CausedBy(exc));
         }
     }
 
-    private static Result<ICredential> FindCredentials(string employeeEmail, string employeeOrganization)
+    private static Result<ICredential> FindCredentials(string email, string organization)
     {
         var store = CredentialManager.Create(nameof(KUPReportGenerator));
         if (store.IsFailed)
@@ -177,14 +194,14 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
         var services = new[]
         {
-            $"{employeeOrganization}@azure.devops",
-            $"git:https://{employeeOrganization}@dev.azure.com/{employeeOrganization}",
-            $"git:https://dev.azure.com/{employeeOrganization}"
+            $"{organization}@azure.devops",
+            $"git:https://{organization}@dev.azure.com/{organization}",
+            $"git:https://dev.azure.com/{organization}"
         };
 
         foreach (var service in services)
         {
-            var credentials = Result.Try(() => store.Value.Get(service, employeeEmail));
+            var credentials = Result.Try(() => store.Value.Get(service, email));
             if (credentials.IsFailed || credentials.ValueOrDefault is null)
             {
                 continue;
@@ -193,8 +210,6 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             return credentials;
         }
 
-        return Result.Fail(new Error("Failed to find git credentials.")
-            .WithMetadata("EmployeeEmail", employeeEmail)
-            .WithMetadata("EmployeeOrganization", employeeOrganization));
+        return Result.Fail(new Error($"Failed to find git credentials for {email} and {organization}."));
     }
 }

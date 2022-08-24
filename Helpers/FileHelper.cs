@@ -8,12 +8,7 @@ internal static class FileHelper
     {
         try
         {
-            if (File.Exists(filePath))
-            {
-                return Result.Ok();
-            }
-
-            return Result.Fail($"{filePath} couldn't be found.");
+            return Result.FailIf(!File.Exists(filePath), $"{filePath} couldn't be found.");
         }
         catch (Exception exc)
         {
