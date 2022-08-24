@@ -116,7 +116,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 commitsHistoryProgressTask.Increment(1.0);
-                
+
                 var finishedCommitsHistoryTask = await Task.WhenAny(commitsHistoryTasks).WaitAsync(cancellationToken);
                 commitsHistoryTasks.Remove(finishedCommitsHistoryTask);
 
@@ -139,7 +139,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             }
 
             return Result.Ok(allCommitsHistory);
-            
+
             async Task<(GitRepository, Result<List<GitCommitRef>>)> ProcessGetCommitsAsync(GitRepository repository)
             {
                 var repoCommitsHistory = await Result.Try(() =>

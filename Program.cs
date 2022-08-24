@@ -92,7 +92,7 @@ internal static class Program
         {
             return reportSettings.ToResult();
         }
-        
+
         var currentMonthName = DatetimeHelper.GetCurrentMonthName();
         var currentMonthWorkingDays = await GetCurrentMonthWorkingDays(reportSettings.Value, cancellationToken);
         if (currentMonthWorkingDays.IsFailed)
@@ -140,7 +140,7 @@ internal static class Program
         }
 
         using var rapidApi = new RapidApi(reportSettings.RapidApiKey);
-        
+
         var startDate = DatetimeHelper.GetFirstDateOfCurrentMonth();
         var endDate = DatetimeHelper.GetLastDateOfCurrentMonth();
 
@@ -250,7 +250,7 @@ internal static class Program
         var saveNewReportSettings = await newReportSettings.SaveAsync(fileInfo.ToString(), cancellationToken);
         return saveNewReportSettings.ToResult();
     }
-    
+
     private static Result Initialize(CancellationToken cancellationToken)
     {
         try

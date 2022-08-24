@@ -8,7 +8,7 @@ internal static class DatetimeHelper
     {
         return DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
     }
-    
+
     public static DateTime GetFirstDateOfCurrentMonth()
     {
         var currentDate = DateTime.UtcNow;
