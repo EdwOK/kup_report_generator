@@ -26,24 +26,22 @@ internal class RapidApi : IDisposable
         _httpClient.DefaultRequestHeaders.Add("X-RapidAPI-Key", apiKey);
     }
 
-    public async Task<Result<ushort>> GetMonthlyWorkingDays(string countryCode = "PL", CancellationToken cancellationToken = default)
+    public async Task<Result<ushort>> GetMonthlyWorkingDays(DateTime startDate, DateTime endDate, string countryCode = "PL",
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var startDate = DatetimeHelper.GetFirstDateOfMonth();
-            var lastDate = DatetimeHelper.GetLastDateOfMonth();
-
             var jsonNode = await _httpClient.GetFromJsonAsync<JsonNode>(
-                $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={lastDate:yyyy-MM-dd}", cancellationToken);
+                $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={endDate:yyyy-MM-dd}",
+                cancellationToken);
 
             var workingDaysResult = jsonNode?["result"]?["working_days"]?["total"]?.ToString();
             if (!ushort.TryParse(workingDaysResult, out var workingDays))
             {
-                throw new Exception();
+                throw new InvalidOperationException("No monthly working days were found.");
             }
 
             return Result.Ok(workingDays);
-
         }
         catch (Exception exc)
         {

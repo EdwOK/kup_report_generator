@@ -44,7 +44,7 @@ public record ReportSettings
     {
         try
         {
-            using var fileStream = File.Create(filePath);
+            await using var fileStream = File.Create(filePath);
             await JsonSerializer.SerializeAsync(fileStream, this, cancellationToken: cancellationToken,
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
             await fileStream.DisposeAsync();
@@ -74,7 +74,7 @@ public record ReportSettings
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
             if (reportSettings is null)
             {
-                throw new Exception();
+                throw new InvalidOperationException("Failed to parse JSON from the report file settings.");
             }
         }
         catch (Exception exc)
