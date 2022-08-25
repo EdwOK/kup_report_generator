@@ -2,7 +2,6 @@
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using FluentResults;
-using KUPReportGenerator.Helpers;
 
 namespace KUPReportGenerator;
 
@@ -26,7 +25,7 @@ internal class RapidApi : IDisposable
         _httpClient.DefaultRequestHeaders.Add("X-RapidAPI-Key", apiKey);
     }
 
-    public async Task<Result<ushort>> GetMonthlyWorkingDays(DateTime startDate, DateTime endDate, string countryCode = "PL",
+    public async Task<Result<ushort>> GetWorkingDays(DateTime startDate, DateTime endDate, string countryCode = "PL",
         CancellationToken cancellationToken = default)
     {
         try

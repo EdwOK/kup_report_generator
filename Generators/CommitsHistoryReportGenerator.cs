@@ -88,16 +88,14 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
             var connectionTask = progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
-            var client = TryConnectToAdo(credentials.Value, reportSettings.ProjectAdoOrganizationName,
-                cancellationToken);
+            var client = TryConnectToAdo(credentials.Value, reportSettings.ProjectAdoOrganizationName, cancellationToken);
             connectionTask.Increment(50.0);
             if (client.IsFailed)
             {
                 return client.ToResult();
             }
 
-            var repositories =
-                await Result.Try(() => client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken));
+            var repositories = await Result.Try(() => client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken));
             if (repositories.IsFailed)
             {
                 return repositories.ToResult();
@@ -173,8 +171,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
         try
         {
             var vssCredentials = new VssBasicCredential(credentials.Account, credentials.Password);
-            var connection =
-                new VssConnection(new Uri($"https://dev.azure.com/{organization}"), vssCredentials);
+            var connection = new VssConnection(new Uri($"https://dev.azure.com/{organization}"), vssCredentials);
             var client = connection.GetClient<GitHttpClient>(cancellationToken);
             return Result.Ok(client);
         }

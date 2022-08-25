@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.Globalization;
 using CliWrap;
 using FluentResults;
 using KUPReportGenerator.CommandLine;
@@ -102,13 +101,13 @@ internal static class Program
 
         reportSettings.Value.WorkingDays =
             await new TextPrompt<ushort>($"How many [green]working days[/] are there in {currentMonthName}?")
-                .DefaultValue(reportSettings.Value.WorkingDays ?? currentMonthWorkingDays.Value)
+                .DefaultValue(currentMonthWorkingDays.Value)
                 .PromptStyle("yellow")
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
 
         reportSettings.Value.AbsencesDays =
             await new TextPrompt<ushort>($"How many [green]absences days[/] are there in {currentMonthName}?")
-                .DefaultValue(reportSettings?.Value.AbsencesDays ?? 0)
+                .DefaultValue((ushort)0)
                 .PromptStyle("yellow")
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
 
@@ -144,7 +143,7 @@ internal static class Program
         var startDate = DatetimeHelper.GetFirstDateOfCurrentMonth();
         var endDate = DatetimeHelper.GetLastDateOfCurrentMonth();
 
-        var workingDaysResult = await rapidApi.GetMonthlyWorkingDays(startDate, endDate, cancellationToken: cancellationToken);
+        var workingDaysResult = await rapidApi.GetWorkingDays(startDate, endDate, cancellationToken: cancellationToken);
         if (workingDaysResult.IsFailed)
         {
             return workingDaysResult.ToResult();
