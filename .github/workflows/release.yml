@@ -7,7 +7,22 @@ on:
 
 jobs:
   release:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            runtime: 'win-x64'
+            package_name: 'kup_report_generator_win_x64.zip'
+          - os: ubuntu-latest
+            runtime: 'linux-x64'
+            package_name: 'kup_report_generator_linux_x64.tar.gz'
+          - os: macos-latest
+            runtime: 'osx-x64'
+            package_name: 'kup_report_generator_macos_x64.zip'
+
+    runs-on: ${{ matrix.os }}
+    
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET
@@ -16,17 +31,29 @@ jobs:
           dotnet-version: 6.0.x
       - name: Build
         run: dotnet build -c Release
+      
       - name: Publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/publish -r win-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
-      - name: Archive Artifact
-        run: powershell Compress-Archive -Path ${{env.DOTNET_ROOT}}\publish\* -DestinationPath ${{env.DOTNET_ROOT}}\kup_report_generator_win_x64.zip
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/publish -r ${{ matrix.runtime }} -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+      
+      - name: Archive Artifact (Windows x64)
+        if: matrix.os == 'windows-latest'
+        run: powershell Compress-Archive -Path ${{env.DOTNET_ROOT}}\publish\* -DestinationPath ${{env.DOTNET_ROOT}}\${{ matrix.package_name }}
+        
+      - name: Archive Artifact (Windows x64)
+        if: matrix.os == 'ubuntu-latest'
+        run: tar cvzf ${{env.DOTNET_ROOT}}/${{ matrix.package_name }} ${{env.DOTNET_ROOT}}/publish/*
+        
+      - name: Archive Artifact (Windows x64)
+        if: matrix.os == 'macos-latest'
+        run: zip -j -r  ${{env.DOTNET_ROOT}}/${{ matrix.package_name }} ${{env.DOTNET_ROOT}}/publish/*
+        
       - name: Upload Release Asset
-        id: upload-release-asset 
+        id: upload-release-asset
         uses: svenstaro/upload-release-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: ${{env.DOTNET_ROOT}}/kup_report_generator_win_x64.zip
-          asset_name: kup_report_generator_win_x64.zip
+          file: ${{env.DOTNET_ROOT}}/${{ matrix.package_name }}
+          asset_name: ${{ matrix.package_name }}
