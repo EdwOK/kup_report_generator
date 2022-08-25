@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using FluentResults;
 using GitCredentialManager;
+using GitCredentialManager.Interop.MacOS;
 using GitCredentialManager.Interop.Windows;
 
 namespace KUPReportGenerator.Helpers;
@@ -16,6 +17,10 @@ internal static class CredentialManager
         else if (EnvironmentUtils.IsLinuxPlatform())
         {
             return Result.Try<ICredentialStore>(() => new CommandContext(GetApplicationPath()).CredentialStore);
+        }
+        else if (EnvironmentUtils.IsMacOSPlatform())
+        {
+            return Result.Try<ICredentialStore>(() => new MacOSKeychain(@namespace));
         }
         else
         {
