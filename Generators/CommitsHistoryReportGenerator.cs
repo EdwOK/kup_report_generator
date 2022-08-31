@@ -47,7 +47,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             var resultBuilder = new StringBuilder();
             var delimiterLine = new string('-', 72);
 
-            foreach (var (repository, commitsHistory) in adoCommits.Value)
+            foreach ((string repository, IEnumerable<GitCommitRef> commitsHistory) in adoCommits.Value)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var commitHistoryBuilder = new StringBuilder();
@@ -104,8 +104,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             var fromDate = DatetimeHelper.GetFirstDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
             var toDate = DatetimeHelper.GetLastDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
             var allCommitsHistory = new Dictionary<string, IEnumerable<GitCommitRef>>();
-            var commitsHistoryErrors = new List<IError>();
-
+            
             var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]",
                 maxValue: repositories.Value.Count);
 
@@ -121,7 +120,6 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 (GitRepository? repository, Result<List<GitCommitRef>>? commitsHistory) = finishedCommitsHistoryTask.Result;
                 if (commitsHistory.IsFailed)
                 {
-                    commitsHistoryErrors.AddRange(commitsHistory.Errors);
                     continue;
                 }
 
@@ -129,11 +127,6 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
                 {
                     allCommitsHistory.Add(repository.Name, commitsHistory.Value);
                 }
-            }
-
-            if (allCommitsHistory.Count == 0 && commitsHistoryErrors.Count > 0)
-            {
-                return Result.Fail("Failed to get commits history.").WithErrors(commitsHistoryErrors);
             }
 
             return Result.Ok(allCommitsHistory);
