@@ -104,7 +104,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             var fromDate = DatetimeHelper.GetFirstDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
             var toDate = DatetimeHelper.GetLastDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
             var allCommitsHistory = new Dictionary<string, IEnumerable<GitCommitRef>>();
-            
+
             var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]",
                 maxValue: repositories.Value.Count);
 
