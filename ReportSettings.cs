@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentResults;
@@ -8,28 +9,28 @@ namespace KUPReportGenerator;
 
 public record ReportSettings
 {
-    [JsonInclude]
+    [Required]
     public string EmployeeFullName { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string EmployeeEmail { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string EmployeeJobPosition { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string EmployeeFolderName { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string ControlerFullName { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string ControlerJobPosition { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string ProjectName { get; set; } = null!;
 
-    [JsonInclude]
+    [Required]
     public string ProjectAdoOrganizationName { get; set; } = null!;
 
     [JsonIgnore]
