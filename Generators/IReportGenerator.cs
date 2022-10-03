@@ -5,6 +5,6 @@ namespace KUPReportGenerator.Generators;
 
 public interface IReportGenerator
 {
-    Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext,
+    Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken);
 }

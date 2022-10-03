@@ -37,7 +37,7 @@ internal class RapidApi : IDisposable
             var workingDaysResult = jsonNode?["result"]?["working_days"]?["total"]?.ToString();
             if (!ushort.TryParse(workingDaysResult, out var workingDays))
             {
-                throw new InvalidOperationException("No monthly working days were found.");
+                return Result.Fail("No monthly working days were found.");
             }
 
             return Result.Ok(workingDays);

@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentResults;
@@ -9,35 +8,21 @@ namespace KUPReportGenerator;
 
 public record ReportSettings
 {
-    [Required]
     public string EmployeeFullName { get; set; } = null!;
 
-    [Required]
     public string EmployeeEmail { get; set; } = null!;
 
-    [Required]
     public string EmployeeJobPosition { get; set; } = null!;
 
-    [Required]
     public string EmployeeFolderName { get; set; } = null!;
 
-    [Required]
     public string ControlerFullName { get; set; } = null!;
 
-    [Required]
     public string ControlerJobPosition { get; set; } = null!;
 
-    [Required]
     public string ProjectName { get; set; } = null!;
 
-    [Required]
     public string ProjectAdoOrganizationName { get; set; } = null!;
-
-    [JsonIgnore]
-    public ushort AbsencesDays { get; set; }
-
-    [JsonIgnore]
-    public ushort? WorkingDays { get; set; }
 
     public string? RapidApiKey { get; set; }
 
@@ -75,7 +60,7 @@ public record ReportSettings
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
             if (reportSettings is null)
             {
-                throw new InvalidOperationException("Failed to parse JSON from the report file settings.");
+                return Result.Fail("Failed to parse JSON from the report file settings.");
             }
         }
         catch (Exception exc)

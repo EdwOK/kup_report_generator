@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using CliWrap;
 using FluentResults;
+using FluentValidation;
 using KUPReportGenerator.CommandLine;
 using KUPReportGenerator.Generators;
 using KUPReportGenerator.Helpers;
@@ -92,6 +93,14 @@ internal static class Program
             return reportSettings.ToResult();
         }
 
+        var validator = new ReportSettingsValidator();
+        var validationResult = await validator.ValidateAsync(reportSettings.Value, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return Result.Fail("Validation failed for the report settings file.")
+                .WithErrors(validationResult.Errors.Select(e => new Error(e.ErrorMessage)));
+        }
+
         var currentMonthName = DatetimeHelper.GetCurrentMonthName();
         var currentMonthWorkingDays = await GetCurrentMonthWorkingDays(reportSettings.Value, cancellationToken);
         if (currentMonthWorkingDays.IsFailed)
@@ -99,17 +108,19 @@ internal static class Program
             return currentMonthWorkingDays.ToResult();
         }
 
-        reportSettings.Value.WorkingDays =
+        var workingDays =
             await new TextPrompt<ushort>($"How many [green]working days[/] are there in {currentMonthName}?")
                 .DefaultValue(currentMonthWorkingDays.Value)
                 .PromptStyle("yellow")
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-        reportSettings.Value.AbsencesDays =
+        var absencesDays =
             await new TextPrompt<ushort>($"How many [green]absences days[/] are there in {currentMonthName}?")
                 .DefaultValue((ushort)0)
                 .PromptStyle("yellow")
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
+
+        var reportContext = new ReportGeneratorContext(reportSettings.Value, absencesDays, workingDays);
 
         return await AnsiConsole.Progress()
             .AutoClear(true)
@@ -125,7 +136,7 @@ internal static class Program
                     new CommitsHistoryReportGenerator(),
                     new HtmlReportGenerator()
                 });
-                return await reportGenerator.Generate(reportSettings!.Value, progressContext, cancellationToken);
+                return await reportGenerator.Generate(reportContext, progressContext, cancellationToken);
             });
     }
 
