@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using FluentResults;
+﻿using FluentResults;
 using HandlebarsDotNet;
 using KUPReportGenerator.Helpers;
 using Spectre.Console;
@@ -8,12 +7,12 @@ namespace KUPReportGenerator.Generators;
 
 internal class HtmlReportGenerator : IReportGenerator
 {
-    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext,
+    public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken)
     {
         var generateHtmlReportTask = progressContext.AddTask("[green]Generating html report.[/]");
         generateHtmlReportTask.Increment(50.0);
-        var htmlReport = await GenerateHtmlReport(reportSettings, cancellationToken);
+        var htmlReport = await GenerateHtmlReport(reportContext, cancellationToken);
         generateHtmlReportTask.Increment(50.0);
         if (htmlReport.IsFailed)
         {
@@ -27,7 +26,7 @@ internal class HtmlReportGenerator : IReportGenerator
         return saveResult;
     }
 
-    private static async Task<Result<string>> GenerateHtmlReport(ReportSettings settings,
+    private static async Task<Result<string>> GenerateHtmlReport(ReportGeneratorContext reportContext,
         CancellationToken cancellationToken)
     {
         try
@@ -45,15 +44,15 @@ internal class HtmlReportGenerator : IReportGenerator
             var htmlReport = reportTemplate(new
             {
                 month_name = DatetimeHelper.GetCurrentMonthName(),
-                working_days = settings.WorkingDays,
-                absences_days = settings.AbsencesDays,
-                project_name = settings.ProjectName,
-                employee_fullname = settings.EmployeeFullName,
-                employee_job_position = settings.EmployeeJobPosition,
+                working_days = reportContext.WorkingDays,
+                absences_days = reportContext.AbsencesDays,
+                project_name = reportContext.ReportSettings.ProjectName,
+                employee_fullname = reportContext.ReportSettings.EmployeeFullName,
+                employee_job_position = reportContext.ReportSettings.EmployeeJobPosition,
                 employee_commits_path =
-                    @$"{settings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month:00}\{Constants.CommitHistoryFileName}",
-                controler_fullname = settings.ControlerFullName,
-                controler_job_position = settings.ControlerJobPosition,
+                    @$"{reportContext.ReportSettings.EmployeeFolderName}\{currentDate.Year}\{currentDate.Month:00}\{Constants.CommitHistoryFileName}",
+                controler_fullname = reportContext.ReportSettings.ControlerFullName,
+                controler_job_position = reportContext.ReportSettings.ControlerJobPosition,
             });
 
             return Result.Ok(htmlReport);

@@ -12,10 +12,10 @@ namespace KUPReportGenerator.Generators;
 
 internal class CommitsHistoryReportGenerator : IReportGenerator
 {
-    public async Task<Result> Generate(ReportSettings reportSettings, ProgressContext progressContext,
+    public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken)
     {
-        var commitsHistory = await GetCommitsHistory(reportSettings, progressContext, cancellationToken);
+        var commitsHistory = await GetCommitsHistory(reportContext, progressContext, cancellationToken);
         if (commitsHistory.IsFailed)
         {
             return commitsHistory.ToResult();
@@ -33,12 +33,12 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
         return saveResult;
     }
 
-    private static async Task<Result<string>> GetCommitsHistory(ReportSettings reportSettings, ProgressContext progressContext,
+    private static async Task<Result<string>> GetCommitsHistory(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken)
     {
         try
         {
-            var adoCommits = await GetAdoCommitsHistory(reportSettings, progressContext, cancellationToken);
+            var adoCommits = await GetAdoCommitsHistory(reportContext, progressContext, cancellationToken);
             if (adoCommits.IsFailed)
             {
                 return adoCommits.ToResult();
@@ -73,13 +73,13 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
     }
 
     private static async Task<Result<Dictionary<string, IEnumerable<GitCommitRef>>>> GetAdoCommitsHistory(
-        ReportSettings reportSettings, ProgressContext progressContext, CancellationToken cancellationToken)
+        ReportGeneratorContext reportContext, ProgressContext progressContext, CancellationToken cancellationToken)
     {
         try
         {
             var credentialTask = progressContext.AddTask("[green]Getting git credentials.[/]");
             credentialTask.Increment(50.0);
-            var credentials = FindCredentials(reportSettings.EmployeeEmail, reportSettings.ProjectAdoOrganizationName);
+            var credentials = FindCredentials(reportContext.ReportSettings.EmployeeEmail, reportContext.ReportSettings.ProjectAdoOrganizationName);
             credentialTask.Increment(50.0);
             if (credentials.IsFailed)
             {
@@ -88,7 +88,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
             var connectionTask = progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
-            var client = TryConnectToAdo(credentials.Value, reportSettings.ProjectAdoOrganizationName, cancellationToken);
+            var client = TryConnectToAdo(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName, cancellationToken);
             connectionTask.Increment(50.0);
             if (client.IsFailed)
             {

@@ -4,10 +4,7 @@ namespace KUPReportGenerator.Helpers;
 
 internal static class DatetimeHelper
 {
-    public static string GetCurrentMonthName()
-    {
-        return DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
-    }
+    public static string GetCurrentMonthName() => DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
 
     public static DateTime GetFirstDateOfCurrentMonth()
     {
@@ -15,8 +12,5 @@ internal static class DatetimeHelper
         return new DateTime(currentDate.Year, currentDate.Month, 1);
     }
 
-    public static DateTime GetLastDateOfCurrentMonth()
-    {
-        return GetFirstDateOfCurrentMonth().AddMonths(1).AddDays(-1);
-    }
+    public static DateTime GetLastDateOfCurrentMonth() => GetFirstDateOfCurrentMonth().AddMonths(1).AddDays(-1);
 }
