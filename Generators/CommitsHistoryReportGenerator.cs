@@ -200,6 +200,6 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
             return credentials;
         }
 
-        return Result.Fail(new Error($"Failed to find git credentials for {email} and {organization}."));
+        return Result.Fail($"Failed to find git credentials for {email} and {organization}.");
     }
 }

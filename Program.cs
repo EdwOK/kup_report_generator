@@ -35,7 +35,8 @@ internal static class Program
                                 if (result.IsSuccess)
                                 {
                                     AnsiConsole.MarkupLine("[green]Done[/]. Reports are successfully generated: ");
-                                    AnsiConsole.MarkupLine($"- [green]{Constants.ReportFilePath}[/]");
+                                    AnsiConsole.MarkupLine($"- [green]{Constants.HtmlReportFilePath}[/]");
+                                    AnsiConsole.MarkupLine($"- [green]{Constants.PdfReportFilePath}[/]");
                                     AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
 
                                     if (EnvironmentUtils.IsWindowsPlatform())
@@ -134,8 +135,9 @@ internal static class Program
                 var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
                 {
                     new CommitsHistoryReportGenerator(),
-                    new HtmlReportGenerator()
+                    new FileReportGenerator()
                 });
+
                 return await reportGenerator.Generate(reportContext, progressContext, cancellationToken);
             });
     }

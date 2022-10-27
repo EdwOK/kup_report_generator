@@ -5,7 +5,7 @@ using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
 
-internal class HtmlReportGenerator : IReportGenerator
+internal class FileReportGenerator : IReportGenerator
 {
     public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken)
@@ -19,11 +19,23 @@ internal class HtmlReportGenerator : IReportGenerator
             return htmlReport.ToResult();
         }
 
-        var saveReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
-        saveReportTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.ReportFilePath, htmlReport.Value, cancellationToken);
-        saveReportTask.Increment(50.0);
-        return saveResult;
+        var saveHtmlReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
+        saveHtmlReportTask.Increment(50.0);
+        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, htmlReport.Value, cancellationToken);
+        saveHtmlReportTask.Increment(50.0);
+        if (saveResult.IsFailed)
+        {
+            return saveResult;
+        }
+
+        var savePdfReportTask = progressContext.AddTask("[green]Saving pdf report in a file.[/]");
+        savePdfReportTask.Increment(50.0);
+        var pdfGenerator = new GoogleChromePdfGenerator();
+        var pdfResult = await pdfGenerator.HtmlToPdfAsync(Constants.HtmlReportFilePath, Constants.PdfReportFilePath,
+            cancellationToken);
+        savePdfReportTask.Increment(50.0);
+
+        return pdfResult;
     }
 
     private static async Task<Result<string>> GenerateHtmlReport(ReportGeneratorContext reportContext,
