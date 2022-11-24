@@ -5,7 +5,7 @@ using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
 
-internal class HtmlReportGenerator : IReportGenerator
+internal class FileHtmlReportGenerator : IReportGenerator
 {
     public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken)
@@ -19,10 +19,15 @@ internal class HtmlReportGenerator : IReportGenerator
             return htmlReport.ToResult();
         }
 
-        var saveReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
-        saveReportTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.ReportFilePath, htmlReport.Value, cancellationToken);
-        saveReportTask.Increment(50.0);
+        var saveHtmlReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
+        saveHtmlReportTask.Increment(50.0);
+        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, htmlReport.Value, cancellationToken);
+        saveHtmlReportTask.Increment(50.0);
+        if (saveResult.IsFailed)
+        {
+            return saveResult;
+        }
+
         return saveResult;
     }
 
