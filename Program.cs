@@ -135,7 +135,8 @@ internal static class Program
                 var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
                 {
                     new CommitsHistoryReportGenerator(),
-                    new FileReportGenerator()
+                    new FileHtmlReportGenerator(),
+                    new FilePdfReportGenerator()
                 });
 
                 return await reportGenerator.Generate(reportContext, progressContext, cancellationToken);
@@ -291,7 +292,7 @@ internal static class Program
 
     private static void WriteErrors(Result result)
     {
-        AnsiConsole.MarkupLine("Oops, something goes wrong with [red]errors[/]: ");
+        AnsiConsole.MarkupLine("[red]Done[/]. Reports are generated with [red]errors[/]: ");
 
         var table = new Table();
         table.AddColumn("N");

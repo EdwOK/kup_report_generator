@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using FluentResults;
+using KUPReportGenerator.Helpers;
 using Microsoft.Win32;
 
 namespace KUPReportGenerator.Generators;
@@ -10,6 +11,20 @@ public class GoogleChromePdfGenerator : IPdfGenerator
     private const string ChromeRegistryValue = "InstallLocation";
     private const string ChromeExecutable = "chrome.exe";
     private const string ChromeArguments = "--headless --disable-gpu --print-to-pdf-no-header --print-to-pdf=\"{0}\" \"{1}\"";
+
+    private GoogleChromePdfGenerator()
+    {
+    }
+
+    public static Result<GoogleChromePdfGenerator> Create()
+    {
+        if (EnvironmentUtils.IsWindowsPlatform())
+        {
+            return Result.Ok(new GoogleChromePdfGenerator());
+        }
+
+        return Result.Fail("Google Chrome PDF generator is not available on your platform.");
+    }
 
     public async Task<Result> HtmlToPdfAsync(string htmlPath, string pdfPath, CancellationToken cancellationToken = default)
     {

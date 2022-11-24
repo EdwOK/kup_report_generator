@@ -5,7 +5,7 @@ using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
 
-internal class FileReportGenerator : IReportGenerator
+internal class FileHtmlReportGenerator : IReportGenerator
 {
     public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
         CancellationToken cancellationToken)
@@ -28,14 +28,7 @@ internal class FileReportGenerator : IReportGenerator
             return saveResult;
         }
 
-        var savePdfReportTask = progressContext.AddTask("[green]Saving pdf report in a file.[/]");
-        savePdfReportTask.Increment(50.0);
-        var pdfGenerator = new GoogleChromePdfGenerator();
-        var pdfResult = await pdfGenerator.HtmlToPdfAsync(Constants.HtmlReportFilePath, Constants.PdfReportFilePath,
-            cancellationToken);
-        savePdfReportTask.Increment(50.0);
-
-        return pdfResult;
+        return saveResult;
     }
 
     private static async Task<Result<string>> GenerateHtmlReport(ReportGeneratorContext reportContext,
