@@ -88,8 +88,9 @@ public class GoogleChromePdfGenerator : IPdfGenerator
     private static Result<string> GetChromePath()
     {
         var error = new Error("Google Chrome isn't installed. Please download and install it.");
-
+#pragma warning disable CA1416
         var chromePath = Registry.GetValue(ChromeRegistryKey, ChromeRegistryValue, null) as string;
+#pragma warning restore CA1416
         if (string.IsNullOrEmpty(chromePath))
         {
             return Result.Fail(error);
