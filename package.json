@@ -30,7 +30,7 @@
       [
         "@semantic-release/exec",
         {
-          "verifyReleaseCmd": "echo ${nextRelease.version} > .next-version"
+          "verifyReleaseCmd": "echo ${nextRelease.version} > .release-version"
         }
       ],
       [

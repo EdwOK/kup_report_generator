@@ -40,10 +40,11 @@ jobs:
       - name: Install tools dependencies
         run: npm ci
 
-      - name: Get next release version
+      - name: Get release version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          touch .release-version
           npx semantic-release --dry-run --debug
           echo "RELEASE_VERSION=$(cat .release-version)" >> $GITHUB_ENV
 
