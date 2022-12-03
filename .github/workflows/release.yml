@@ -37,10 +37,10 @@ jobs:
         with:
           dotnet-version: 7.0.x
 
-      - name: Install dependencies
+      - name: Install tools dependencies
         run: npm ci
 
-      - name: Save release version
+      - name: Get next release version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
