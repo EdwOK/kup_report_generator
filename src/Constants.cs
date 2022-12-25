@@ -15,9 +15,7 @@ public static class Constants
 
     private const string HtmlReportFileName = "report.html";
     public static readonly string HtmlReportFilePath = Path.Combine(OutputDirectory, HtmlReportFileName);
+
     private const string PdfReportFileName = "report.pdf";
     public static readonly string PdfReportFilePath = Path.Combine(OutputDirectory, PdfReportFileName);
-
-    private const string ReportTemplateFileName = "report_template.html";
-    public static readonly string ReportTemplateFilePath = Path.Combine(ResourceDirectory, ReportTemplateFileName);
 }
