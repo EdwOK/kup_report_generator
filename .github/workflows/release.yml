@@ -2,75 +2,84 @@ name: release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  release:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: windows-latest
-            runtime: 'win-x64'
-            package_name: 'kup_report_generator_win_x64.zip'
-          - os: ubuntu-latest
-            runtime: 'linux-x64'
-            package_name: 'kup_report_generator_linux_x64.tar.gz'
-          - os: macos-latest
-            runtime: 'osx-x64'
-            package_name: 'kup_report_generator_macos_x64.zip'
-
-    runs-on: ${{ matrix.os }}
-    
+  semantic-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release-version: ${{ steps.release_version.outputs.RELEASE_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           persist-credentials: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           cache: npm
           node-version: 16
+
+      - name: Install tools dependencies
+        run: npm ci
+
+      - name: Release version
+        id: release_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.CI_ACTIONS_TOKEN }}
+        run: |
+          touch .release-version
+          npx semantic-release
+          echo "RELEASE_VERSION=$(cat .release-version)" >> $GITHUB_OUTPUT
+
+  release:
+    needs: semantic-release
+    env:
+      RELEASE_VERSION: ${{ needs.semantic-release.outputs.release-version }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            runtime: "win-x64"
+            package_name: "kup_report_generator_win_x64.zip"
+          - os: ubuntu-latest
+            runtime: "linux-x64"
+            package_name: "kup_report_generator_linux_x64.tar.gz"
+          - os: macos-latest
+            runtime: "osx-x64"
+            package_name: "kup_report_generator_macos_x64.zip"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 7.0.x
 
-      - name: Install tools dependencies
-        run: npm ci
-
-      - name: Get release version
-        env:
-          GITHUB_TOKEN: ${{ secrets.CI_ACTIONS_TOKEN }}
-        run: |
-          touch .release-version
-          npx semantic-release --dry-run --debug
-          echo "RELEASE_VERSION=$(cat .release-version)" >> $GITHUB_ENV
-
       - name: Build Project
-        run: dotnet build -c Release -p:Version=$RELEASE_VERSION
+        run: dotnet build -c Release -p:Version=${{ env.RELEASE_VERSION }}
 
       - name: Publish Project
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/publish -r ${{ matrix.runtime }} -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
-      
+        run: dotnet publish -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+
       - name: Archive Artifact (Windows x64)
         if: matrix.os == 'windows-latest'
-        run: powershell Compress-Archive -Path ${{env.DOTNET_ROOT}}\publish\* -DestinationPath ${{env.DOTNET_ROOT}}\${{ matrix.package_name }}
-        
+        run: powershell Compress-Archive -Path ${{ env.DOTNET_ROOT }}\publish\* -DestinationPath ${{ env.DOTNET_ROOT }}\${{ matrix.package_name }}
+
       - name: Archive Artifact (Linux x64)
         if: matrix.os == 'ubuntu-latest'
-        run: tar cvzf ${{env.DOTNET_ROOT}}/${{ matrix.package_name }} ${{env.DOTNET_ROOT}}/publish/*
-        
+        run: tar cvzf ${{ env.DOTNET_ROOT }}/${{ matrix.package_name }} ${{ env.DOTNET_ROOT }}/publish/*
+
       - name: Archive Artifact (MacOS x64)
         if: matrix.os == 'macos-latest'
-        run: zip -j -r  ${{env.DOTNET_ROOT}}/${{ matrix.package_name }} ${{env.DOTNET_ROOT}}/publish/*
-
-      - name: Update CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.CI_ACTIONS_TOKEN }}
-        run: npx semantic-release
+        run: zip -j -r ${{ env.DOTNET_ROOT }}/${{ matrix.package_name }} ${{ env.DOTNET_ROOT }}/publish/*
 
       - name: Upload Release Asset
         id: upload-release-asset
@@ -79,7 +88,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CI_ACTIONS_TOKEN }}
         with:
           repo_token: ${{ secrets.CI_ACTIONS_TOKEN }}
-          tag: ${{ github.ref }}
-          file: ${{env.DOTNET_ROOT}}/${{ matrix.package_name }}
+          tag: ${{ env.RELEASE_VERSION }}
+          file: ${{ env.DOTNET_ROOT }}/${{ matrix.package_name }}
           asset_name: ${{ matrix.package_name }}
-      

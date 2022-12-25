@@ -1,16 +1,23 @@
-﻿using FluentResults;
+﻿using System.Text;
+using FluentResults;
 using HandlebarsDotNet;
 using KUPReportGenerator.Helpers;
-using Spectre.Console;
+using KUPReportGenerator.Properties;
+using KUPReportGenerator.Report;
+using KUPReportGenerator.TaskProgress;
 
 namespace KUPReportGenerator.Generators;
 
 internal class FileHtmlReportGenerator : IReportGenerator
 {
-    public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
-        CancellationToken cancellationToken)
+    private readonly IProgressContext _progressContext;
+
+    public FileHtmlReportGenerator(IProgressContext progressContext) =>
+        _progressContext = progressContext;
+
+    public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
-        var generateHtmlReportTask = progressContext.AddTask("[green]Generating html report.[/]");
+        var generateHtmlReportTask = _progressContext.AddTask("[green]Generating html report.[/]");
         generateHtmlReportTask.Increment(50.0);
         var htmlReport = await GenerateHtmlReport(reportContext, cancellationToken);
         generateHtmlReportTask.Increment(50.0);
@@ -19,9 +26,10 @@ internal class FileHtmlReportGenerator : IReportGenerator
             return htmlReport.ToResult();
         }
 
-        var saveHtmlReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
+        var saveHtmlReportTask = _progressContext.AddTask("[green]Saving html report in a file.[/]");
         saveHtmlReportTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, htmlReport.Value, cancellationToken);
+        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, Encoding.UTF8.GetBytes(htmlReport.Value),
+            cancellationToken);
         saveHtmlReportTask.Increment(50.0);
         if (saveResult.IsFailed)
         {
@@ -36,14 +44,7 @@ internal class FileHtmlReportGenerator : IReportGenerator
     {
         try
         {
-            var htmlReportTemplate = await FileHelper.ReadAsync(Constants.ReportTemplateFilePath, cancellationToken);
-            if (htmlReportTemplate.IsFailed)
-            {
-                return htmlReportTemplate.ToResult();
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            var reportTemplate = Handlebars.Compile(htmlReportTemplate.Value);
+            var reportTemplate = await Task.Run(() => Handlebars.Compile(Resources.report_template), cancellationToken);
 
             var currentDate = DateTime.UtcNow;
             var htmlReport = reportTemplate(new

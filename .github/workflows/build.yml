@@ -2,7 +2,7 @@ name: build
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -44,10 +44,9 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore
-      
+
       - name: Check next release version
         env:
           GITHUB_TOKEN: ${{ secrets.CI_ACTIONS_TOKEN }}
         run: |
           npx semantic-release --no-ci --dry-run --debug
-

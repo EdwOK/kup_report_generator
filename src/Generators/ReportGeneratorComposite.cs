@@ -1,5 +1,5 @@
 ﻿using FluentResults;
-using Spectre.Console;
+using KUPReportGenerator.Report;
 
 namespace KUPReportGenerator.Generators;
 
@@ -10,12 +10,11 @@ public class ReportGeneratorComposite : IReportGenerator
     public ReportGeneratorComposite(IEnumerable<IReportGenerator> reportGenerators) =>
         _reportGenerators = reportGenerators;
 
-    public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
-        CancellationToken cancellationToken)
+    public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
         foreach (var reportGenerator in _reportGenerators)
         {
-            var reportResult = await reportGenerator.Generate(reportContext, progressContext, cancellationToken);
+            var reportResult = await reportGenerator.Generate(reportContext, cancellationToken);
             if (reportResult.IsFailed)
             {
                 return reportResult;

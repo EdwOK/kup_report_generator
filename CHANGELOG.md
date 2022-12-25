@@ -1,4 +1,4 @@
-## [2.7.0](https://github.com/EdwOK/kup_report_generator/compare/2.6.0...2.7.0) (2022-12-25)
+## [2.7.0](https://github.com/EdwOK/kup_report_generator/compare/2.6.0...2.7.0) (2022-12-26)
 
 
 ### Features

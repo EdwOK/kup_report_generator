@@ -1,7 +1,6 @@
 ﻿using FluentValidation;
-using Microsoft.VisualStudio.Services.Common;
 
-namespace KUPReportGenerator;
+namespace KUPReportGenerator.Report;
 
 internal class ReportSettingsValidator : AbstractValidator<ReportSettings>
 {
@@ -33,6 +32,6 @@ internal class ReportSettingsValidator : AbstractValidator<ReportSettings>
 
         RuleFor(s => s.RapidApiKey)
             .NotEmpty()
-            .When(s => s.RapidApiKey != null);
+            .When(s => s.RapidApiKey is not null);
     }
 }

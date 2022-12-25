@@ -23,7 +23,7 @@ internal static class CommandLineBuilder
                     return;
                 }
 
-                if (Path.GetExtension(token.Value) != ".json")
+                if (Path.GetExtension(token.Value) is not ".json")
                 {
                     result.ErrorMessage = "File settings must be in JSON format.";
                     return;
