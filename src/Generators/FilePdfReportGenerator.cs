@@ -1,21 +1,24 @@
 ﻿using FluentResults;
 using KUPReportGenerator.Converters;
 using KUPReportGenerator.Report;
-using Spectre.Console;
+using KUPReportGenerator.TaskProgress;
 
 namespace KUPReportGenerator.Generators;
 
 internal class FilePdfReportGenerator : IReportGenerator
 {
+    private readonly IProgressContext _progressContext;
     private IPdfConverter _pdfConverter;
 
-    public FilePdfReportGenerator(IPdfConverter pdfConverter) =>
-        _pdfConverter = pdfConverter;
-
-    public async Task<Result> Generate(ReportGeneratorContext reportContext, ProgressContext progressContext,
-        CancellationToken cancellationToken)
+    public FilePdfReportGenerator(IProgressContext progressContext, IPdfConverter pdfConverter)
     {
-        var savePdfReportTask = progressContext.AddTask("[green]Saving pdf report in a file.[/]");
+        _progressContext = progressContext;
+        _pdfConverter = pdfConverter;
+    }
+
+    public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
+    {
+        var savePdfReportTask = _progressContext.AddTask("[green]Saving pdf report in a file.[/]");
         savePdfReportTask.Increment(50.0);
         var pdfResult = await _pdfConverter.HtmlToPdfAsync(Constants.HtmlReportFilePath, Constants.PdfReportFilePath,
             cancellationToken);

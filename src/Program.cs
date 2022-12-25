@@ -5,8 +5,10 @@ using FluentValidation;
 using KUPReportGenerator.CommandLine;
 using KUPReportGenerator.Converters;
 using KUPReportGenerator.Generators;
+using KUPReportGenerator.GitCommitsHistory;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Report;
+using KUPReportGenerator.TaskProgress;
 using Spectre.Console;
 
 namespace KUPReportGenerator;
@@ -134,14 +136,16 @@ internal static class Program
                 new RemainingTimeColumn())
             .StartAsync(async progressContext =>
             {
+                var spectralProgressContext = new SpectreConsoleProgressContext(progressContext);
+
                 var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
                 {
-                    new CommitsHistoryReportGenerator(),
-                    new FileHtmlReportGenerator(),
-                    new FilePdfReportGenerator(new GoogleChromePdfConvert())
+                    new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
+                    new FileHtmlReportGenerator(spectralProgressContext),
+                    new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
                 });
 
-                return await reportGenerator.Generate(reportContext, progressContext, cancellationToken);
+                return await reportGenerator.Generate(reportContext, cancellationToken);
             });
     }
 
