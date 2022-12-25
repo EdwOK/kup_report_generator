@@ -1,8 +1,8 @@
 ﻿using FluentResults;
 
-namespace KUPReportGenerator.Generators;
+namespace KUPReportGenerator.Converters;
 
-internal interface IPdfGenerator
+internal interface IPdfConverter
 {
     Task<Result> HtmlToPdfAsync(string htmlPath, string pdfPath, CancellationToken cancellationToken = default);
 }

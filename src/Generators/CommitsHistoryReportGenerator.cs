@@ -3,6 +3,7 @@ using System.Text;
 using FluentResults;
 using GitCredentialManager;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Report;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -28,7 +29,8 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
         var saveCommitsHistoryTask = progressContext.AddTask("[green]Saving commits history in the report file.[/]");
         saveCommitsHistoryTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, commitsHistory.Value, cancellationToken);
+        var saveResult = await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, Encoding.UTF8.GetBytes(commitsHistory.Value),
+            cancellationToken);
         saveCommitsHistoryTask.Increment(50.0);
         return saveResult;
     }

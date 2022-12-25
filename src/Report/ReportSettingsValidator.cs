@@ -1,7 +1,6 @@
 ﻿using FluentValidation;
-using Microsoft.VisualStudio.Services.Common;
 
-namespace KUPReportGenerator;
+namespace KUPReportGenerator.Report;
 
 internal class ReportSettingsValidator : AbstractValidator<ReportSettings>
 {

@@ -27,8 +27,8 @@ internal static class FileHelper
             }
 
             await using var file = File.OpenRead(filePath);
-            using var htmlReader = new StreamReader(file);
-            var fileContent = await htmlReader.ReadToEndAsync().WaitAsync(cancellationToken);
+            using var fileReader = new StreamReader(file);
+            var fileContent = await fileReader.ReadToEndAsync(cancellationToken);
             return Result.Ok(fileContent);
         }
         catch (Exception exc)
@@ -37,13 +37,13 @@ internal static class FileHelper
         }
     }
 
-    public static async Task<Result> SaveAsync(string filePath, string text, CancellationToken cancellationToken)
+    public static async Task<Result> SaveAsync(string filePath, byte[] data, CancellationToken cancellationToken)
     {
         try
         {
-            await using var file = File.CreateText(filePath);
-            await file.WriteAsync(text.ToCharArray(), cancellationToken);
-            await file.FlushAsync().WaitAsync(cancellationToken);
+            await using var file = File.Create(filePath);
+            await file.WriteAsync(data, cancellationToken);
+            await file.FlushAsync(cancellationToken);
             return Result.Ok();
         }
         catch (Exception exc)

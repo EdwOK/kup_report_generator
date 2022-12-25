@@ -1,6 +1,9 @@
-﻿using FluentResults;
+﻿using System.Text;
+using FluentResults;
 using HandlebarsDotNet;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Properties;
+using KUPReportGenerator.Report;
 using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
@@ -21,7 +24,8 @@ internal class FileHtmlReportGenerator : IReportGenerator
 
         var saveHtmlReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
         saveHtmlReportTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, htmlReport.Value, cancellationToken);
+        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, Encoding.UTF8.GetBytes(htmlReport.Value),
+            cancellationToken);
         saveHtmlReportTask.Increment(50.0);
         if (saveResult.IsFailed)
         {
@@ -36,14 +40,7 @@ internal class FileHtmlReportGenerator : IReportGenerator
     {
         try
         {
-            var htmlReportTemplate = await FileHelper.ReadAsync(Constants.ReportTemplateFilePath, cancellationToken);
-            if (htmlReportTemplate.IsFailed)
-            {
-                return htmlReportTemplate.ToResult();
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            var reportTemplate = Handlebars.Compile(htmlReportTemplate.Value);
+            var reportTemplate = await Task.Run(() => Handlebars.Compile(Resources.report_template), cancellationToken);
 
             var currentDate = DateTime.UtcNow;
             var htmlReport = reportTemplate(new

@@ -1,4 +1,5 @@
 ﻿using FluentResults;
+using KUPReportGenerator.Report;
 using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;

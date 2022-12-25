@@ -3,8 +3,10 @@ using CliWrap;
 using FluentResults;
 using FluentValidation;
 using KUPReportGenerator.CommandLine;
+using KUPReportGenerator.Converters;
 using KUPReportGenerator.Generators;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Report;
 using Spectre.Console;
 
 namespace KUPReportGenerator;
@@ -136,7 +138,7 @@ internal static class Program
                 {
                     new CommitsHistoryReportGenerator(),
                     new FileHtmlReportGenerator(),
-                    new FilePdfReportGenerator()
+                    new FilePdfReportGenerator(new GoogleChromePdfConvert())
                 });
 
                 return await reportGenerator.Generate(reportContext, progressContext, cancellationToken);
