@@ -1,3 +1,10 @@
+## [2.7.1](https://github.com/EdwOK/kup_report_generator/compare/2.7.0...2.7.1) (2022-12-26)
+
+
+### Bug Fixes
+
+* disable trimmed for publish ([#36](https://github.com/EdwOK/kup_report_generator/issues/36)) ([9a36be5](https://github.com/EdwOK/kup_report_generator/commit/9a36be5dfab795361cd9deb9f10981c0ce7c989f))
+
 ## [2.7.0](https://github.com/EdwOK/kup_report_generator/compare/2.6.0...2.7.0) (2022-12-26)
 
 
