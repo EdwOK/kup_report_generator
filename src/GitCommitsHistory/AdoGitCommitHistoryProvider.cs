@@ -34,15 +34,17 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
 
             var connectionTask = _progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
-            var client = TryConnectToAdo(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
+            var clientResult = TryConnectToAdo(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
                 cancellationToken);
             connectionTask.Increment(50.0);
-            if (client.IsFailed)
+            if (clientResult.IsFailed)
             {
-                return client.ToResult();
+                return clientResult.ToResult();
             }
 
-            var repositories = await Result.Try(() => client.Value.GetRepositoriesAsync(cancellationToken: cancellationToken));
+            using var client = clientResult.Value;
+
+            var repositories = await Result.Try(() => client.GetRepositoriesAsync(cancellationToken: cancellationToken));
             if (repositories.IsFailed)
             {
                 return repositories.ToResult();
@@ -102,7 +104,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
             async Task<(GitRepository, Result<List<GitCommitRef>>)> ProcessGetCommitsAsync(GitRepository repository)
             {
                 var repoCommitsHistory = await Result.Try(() =>
-                    client?.Value.GetCommitsAsync(repository.Id,
+                    client.GetCommitsAsync(repository.Id,
                         new GitQueryCommitsCriteria
                         {
                             ItemVersion = new GitVersionDescriptor
@@ -127,7 +129,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
     }
 
     private static Result<GitHttpClient> TryConnectToAdo(ICredential credentials, string organization,
-    CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         try
         {
