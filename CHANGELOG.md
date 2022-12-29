@@ -1,3 +1,10 @@
+## [2.8.0](https://github.com/EdwOK/kup_report_generator/compare/2.7.1...2.8.0) (2022-12-29)
+
+
+### Features
+
+* add exception logs to file ([#37](https://github.com/EdwOK/kup_report_generator/issues/37)) ([07cfa76](https://github.com/EdwOK/kup_report_generator/commit/07cfa76e1d6850a91b907ddaf3bd9c188bf3523c))
+
 ## [2.7.1](https://github.com/EdwOK/kup_report_generator/compare/2.7.0...2.7.1) (2022-12-26)
 
 
