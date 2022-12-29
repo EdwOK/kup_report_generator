@@ -32,7 +32,7 @@ internal static class CommandLineBuilder
         });
     }
 
-    public static RootCommand BuildRootCommand(Func<FileInfo, CancellationToken, Task> handler)
+    public static RootCommand BuildRootCommand(Func<FileInfo, Task> handler)
     {
         var rootCommand = new RootCommand();
         rootCommand.AddGlobalOption(_settingsFileOption);
