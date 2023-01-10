@@ -153,9 +153,9 @@ async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationTok
 
             var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
             {
-                    new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
-                    new FileHtmlReportGenerator(spectralProgressContext),
-                    new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
+                new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
+                new FileHtmlReportGenerator(spectralProgressContext),
+                new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
             });
 
             return await reportGenerator.Generate(reportContext, cancellationToken);
@@ -343,5 +343,5 @@ void WriteErrors(Result result)
     }
 
     AnsiConsole.Write(table);
-    AnsiConsole.WriteLine("See details in logs.");
+    AnsiConsole.WriteLine("See details in logs.txt");
 }
