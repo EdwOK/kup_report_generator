@@ -18,4 +18,8 @@ public static class Constants
 
     private const string PdfReportFileName = "report.pdf";
     public static readonly string PdfReportFilePath = Path.Combine(OutputDirectory, PdfReportFileName);
+
+    public const string RepositoryOwner = "EdwOK";
+
+    public const string Repository = "kup_report_generator";
 }

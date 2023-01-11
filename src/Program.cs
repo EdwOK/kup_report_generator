@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Runtime.InteropServices;
 using CliWrap;
 using FluentResults;
 using FluentValidation;
@@ -40,7 +41,7 @@ try
             var action = await new SelectionPrompt<string>()
                 .Title("What do you want [green]to do[/]?")
                 .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
-                .AddChoices(nameof(CommandLineActions.Run), nameof(CommandLineActions.Install))
+                .AddChoices(nameof(CommandLineActions.Run), nameof(CommandLineActions.Install), nameof(CommandLineActions.Update))
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
 
             switch (action)
@@ -83,6 +84,20 @@ try
 
                         break;
                     }
+                case nameof(CommandLineActions.Update):
+                    {
+                        var result = await UpdateAsync(cancellationToken);
+                        if (result.IsSuccess)
+                        {
+                            AnsiConsole.MarkupLine("[green]Done[/]. Now you can run.");
+                        }
+                        else if (HasErrors(result))
+                        {
+                            WriteErrors(result);
+                        }
+
+                        break;
+                    }
             }
         });
 
@@ -95,6 +110,30 @@ finally
     AnsiConsole.WriteLine();
     AnsiConsole.MarkupLine("Press [green]any[/] key to exit.");
     Console.ReadKey();
+}
+
+async Task<Result> UpdateAsync(CancellationToken cancellationToken)
+{
+    var updateManager = new UpdateManager();
+
+    var releases = await updateManager.GetReleases(cancellationToken);
+    if (releases.IsFailed)
+    {
+        return releases.ToResult();
+    }
+
+    var version =
+        await new SelectionPrompt<string>()
+            .Title("What's [green]release version[/] would you like to update to?")
+            .PageSize(15)
+            .MoreChoicesText("[grey](Move up and down to reveal more release versions)[/]")
+            .AddChoices(releases.Value.Select(r => r.Version))
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
+
+    var release = releases.Value.First(r => r.Version == version);
+    await updateManager.Update(release, OSPlatform.Windows, cancellationToken);
+
+    return Result.Ok();
 }
 
 async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationToken)
@@ -153,9 +192,9 @@ async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationTok
 
             var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
             {
-                    new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
-                    new FileHtmlReportGenerator(spectralProgressContext),
-                    new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
+                new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
+                new FileHtmlReportGenerator(spectralProgressContext),
+                new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
             });
 
             return await reportGenerator.Generate(reportContext, cancellationToken);
