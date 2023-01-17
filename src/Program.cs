@@ -382,5 +382,5 @@ void WriteErrors(Result result)
     }
 
     AnsiConsole.Write(table);
-    AnsiConsole.WriteLine("See details in logs.");
+    AnsiConsole.WriteLine("See details in logs.txt");
 }
