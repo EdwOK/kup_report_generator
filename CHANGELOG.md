@@ -1,3 +1,16 @@
+## [2.9.0](https://github.com/EdwOK/kup_report_generator/compare/2.8.0...2.9.0) (2023-01-28)
+
+
+### Features
+
+* Add app installer  ([#42](https://github.com/EdwOK/kup_report_generator/issues/42)) ([03ff972](https://github.com/EdwOK/kup_report_generator/commit/03ff972ccfb949f50d78889721a1e5b91683e961))
+* add version-release pipeline ([83259fc](https://github.com/EdwOK/kup_report_generator/commit/83259fc9b3ba6aa13b28e3801e74ecc90595e166))
+
+
+### Bug Fixes
+
+* release pipeline ([44b1ac4](https://github.com/EdwOK/kup_report_generator/commit/44b1ac43eb887229791aa918d33adcd1b97a4108))
+
 ## [2.8.0](https://github.com/EdwOK/kup_report_generator/compare/2.7.1...2.8.0) (2022-12-29)
 
 
