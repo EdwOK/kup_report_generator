@@ -2,42 +2,13 @@ name: release
 
 on:
   push:
-    branches: ["main"]
+    tags:
+      - "*.*.*"
 
 jobs:
-  semantic-release:
-    runs-on: ubuntu-latest
-    outputs:
-      release-version: ${{ steps.release_version.outputs.RELEASE_VERSION }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          cache: npm
-          node-version: 16
-
-      - name: Install tools dependencies
-        run: npm ci
-
-      - name: Release version
-        id: release_version
-        env:
-          GITHUB_TOKEN: ${{ secrets.CI_ACTIONS_TOKEN }}
-        run: |
-          touch .release-version
-          npx semantic-release
-          echo "RELEASE_VERSION=$(cat .release-version)" >> $GITHUB_OUTPUT
-
   release:
-    needs: semantic-release
     env:
-      RELEASE_VERSION: ${{ needs.semantic-release.outputs.release-version }}
+      RELEASE_VERSION: ${{ github.ref_name }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
