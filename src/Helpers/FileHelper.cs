@@ -2,7 +2,7 @@
 
 namespace KUPReportGenerator.Helpers;
 
-internal static class FileHelper
+public static class FileHelper
 {
     public static Result<bool> Exists(string filePath)
     {
