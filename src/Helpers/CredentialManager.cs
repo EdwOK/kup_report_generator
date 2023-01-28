@@ -6,7 +6,7 @@ using GitCredentialManager.Interop.Windows;
 
 namespace KUPReportGenerator.Helpers;
 
-internal static class CredentialManager
+public static class CredentialManager
 {
     public static Result<ICredentialStore> Create(string? @namespace = default)
     {

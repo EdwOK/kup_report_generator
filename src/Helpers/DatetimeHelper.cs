@@ -2,7 +2,7 @@
 
 namespace KUPReportGenerator.Helpers;
 
-internal static class DatetimeHelper
+public static class DatetimeHelper
 {
     public static string GetCurrentMonthName() => DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
 

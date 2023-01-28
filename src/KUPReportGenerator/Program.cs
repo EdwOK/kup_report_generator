@@ -1,8 +1,6 @@
 ﻿using System.CommandLine;
-using System.Runtime.InteropServices;
 using CliWrap;
 using FluentResults;
-using FluentValidation;
 using KUPReportGenerator;
 using KUPReportGenerator.CommandLine;
 using KUPReportGenerator.Converters;
@@ -35,13 +33,13 @@ try
                 e.Cancel = true;
             };
 
-            AnsiConsole.Write(new FigletText("KUP Report Generator").Centered().Color(Color.Green1));
+            AnsiConsole.Write(new FigletText($"KUP Report Generator").Centered().Color(Color.Green1));
             AnsiConsole.MarkupLine("Started, Press [green]Ctrl-C[/] to stop.");
 
             var action = await new SelectionPrompt<string>()
                 .Title("What do you want [green]to do[/]?")
                 .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
-                .AddChoices(nameof(CommandLineActions.Run), nameof(CommandLineActions.Install), nameof(CommandLineActions.Update))
+                .AddChoices(nameof(CommandLineActions.Run), nameof(CommandLineActions.Install))
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
 
             switch (action)
@@ -63,9 +61,10 @@ try
                                     .ExecuteAsync(cancellationToken);
                             }
                         }
-                        else if (HasErrors(result))
+                        else if (ConsoleHelpers.HasErrors(result))
                         {
-                            WriteErrors(result);
+                            AnsiConsole.MarkupLine("[red]Done[/]. Reports are generated with [red]errors[/]: ");
+                            ConsoleHelpers.WriteErrors(result);
                         }
 
                         break;
@@ -77,23 +76,10 @@ try
                         {
                             AnsiConsole.MarkupLine("[green]Done[/]. Now you can run.");
                         }
-                        else if (HasErrors(result))
+                        else if (ConsoleHelpers.HasErrors(result))
                         {
-                            WriteErrors(result);
-                        }
-
-                        break;
-                    }
-                case nameof(CommandLineActions.Update):
-                    {
-                        var result = await UpdateAsync(cancellationToken);
-                        if (result.IsSuccess)
-                        {
-                            AnsiConsole.MarkupLine("[green]Done[/]. Now you can run.");
-                        }
-                        else if (HasErrors(result))
-                        {
-                            WriteErrors(result);
+                            AnsiConsole.MarkupLine("[red]Done[/]. Reports are generated with [red]errors[/]: ");
+                            ConsoleHelpers.WriteErrors(result);
                         }
 
                         break;
@@ -110,30 +96,6 @@ finally
     AnsiConsole.WriteLine();
     AnsiConsole.MarkupLine("Press [green]any[/] key to exit.");
     Console.ReadKey();
-}
-
-async Task<Result> UpdateAsync(CancellationToken cancellationToken)
-{
-    var updateManager = new UpdateManager();
-
-    var releases = await updateManager.GetReleases(cancellationToken);
-    if (releases.IsFailed)
-    {
-        return releases.ToResult();
-    }
-
-    var version =
-        await new SelectionPrompt<string>()
-            .Title("What's [green]release version[/] would you like to update to?")
-            .PageSize(15)
-            .MoreChoicesText("[grey](Move up and down to reveal more release versions)[/]")
-            .AddChoices(releases.Value.Select(r => r.Version))
-            .ShowAsync(AnsiConsole.Console, cancellationToken);
-
-    var release = releases.Value.First(r => r.Version == version);
-    await updateManager.Update(release, OSPlatform.Windows, cancellationToken);
-
-    return Result.Ok();
 }
 
 async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationToken)
@@ -342,45 +304,4 @@ Result Initialize(CancellationToken cancellationToken)
             new Error($"Initialization failed. Could\'t create output directory: {Constants.OutputDirectory}.")
                 .CausedBy(exc));
     }
-}
-
-bool HasErrors(Result result) =>
-    result.IsFailed && !result.HasException<OperationCanceledException>(e => e.CancellationToken.IsCancellationRequested);
-
-void WriteErrors(Result result)
-{
-    AnsiConsole.MarkupLine("[red]Done[/]. Reports are generated with [red]errors[/]: ");
-
-    var table = new Table();
-    table.AddColumn("N");
-    table.AddColumn(new TableColumn("Error").Centered());
-
-    for (var index = 0; index < result.Errors.Count; index++)
-    {
-        var error = result.Errors[index];
-        var reasons = error.Reasons
-            .Select(r => r is ExceptionalError exc ? exc : null)
-            .Where(r => r is not null)
-            .ToArray();
-
-        var grid = new Grid();
-        grid.AddColumn(new GridColumn().LeftAligned().NoWrap());
-        grid.AddRow($"[red]{error.Message}[/]");
-        Log.Error("Error: {error}", error.Message);
-
-        if (reasons.Any())
-        {
-            grid.AddEmptyRow();
-            foreach (var reason in reasons)
-            {
-                grid.AddRow($"[orangered1]{$"{reason!.Exception.Source}: {reason!.Exception.Message}"}[/]");
-                Log.Error(reason.Exception, "Reason: {reason}", reason.Exception.Message);
-            }
-        }
-
-        table.AddRow(new Text($"{index + 1}"), grid);
-    }
-
-    AnsiConsole.Write(table);
-    AnsiConsole.WriteLine("See details in logs.txt");
 }

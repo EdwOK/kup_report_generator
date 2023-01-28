@@ -2,7 +2,7 @@
 
 namespace KUPReportGenerator.Helpers;
 
-internal static class EnvironmentUtils
+public static class EnvironmentUtils
 {
     public static bool IsWindowsPlatform() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 

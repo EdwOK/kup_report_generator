@@ -1,14 +1,15 @@
-﻿using System.IO.Compression;
+﻿using System.Buffers;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using FluentResults;
 
-namespace KUPReportGenerator;
+namespace KUPReportGenerator.Installer;
 
-public class UpdateManager
+public class InstallManager : IInstallManager
 {
     private readonly Octokit.IGitHubClient _client;
 
-    public UpdateManager() =>
+    public InstallManager() =>
         _client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue(nameof(KUPReportGenerator)));
 
     public async Task<Result<IEnumerable<Release>>> GetReleases(CancellationToken cancellationToken)
@@ -78,24 +79,68 @@ public class UpdateManager
         }
     }
 
-    public async Task<Result> Update(Release release, OSPlatform osPlatform, CancellationToken cancellationToken)
+    public async Task<Result> Install(Release release, OSPlatform osPlatform, CancellationToken cancellationToken)
     {
         var releaseAsset = release.Assets.FirstOrDefault(a => a.OSPlatform.Equals(osPlatform));
         if (releaseAsset is null)
         {
-            return Result.Fail("No release asset found for the current OS platform.");
+            return Result.Fail($"No release asset found for the {osPlatform} OS platform.");
         }
 
-        var fileName = Path.Combine(Path.GetTempPath(), releaseAsset!.FileName);
-        var tempFile = await Result.Try(() => DownloadFile(releaseAsset.DownloadUrl, fileName, cancellationToken));
+        var init = Result.Try(Initialize);
+        if (init.IsFailed)
+        {
+            return init;
+        }
 
-        return Result.Ok();
+        var archivePath = Path.Combine(Constants.DownloadDirectory, $"{release.Version}-{releaseAsset!.FileName}");
+
+        var downloadedArchive = await Result.Try(() => DownloadFile(releaseAsset.DownloadUrl, archivePath, cancellationToken));
+        if (downloadedArchive.IsFailed)
+        {
+            return downloadedArchive.ToResult();
+        }
+
+        var extractPath = ExtractArchive(downloadedArchive.Value, Constants.DownloadDirectory);
+        if (extractPath.IsFailed)
+        {
+            return extractPath.ToResult();
+        }
+
+        return Result.Try(() =>
+        {
+            UpdateAppFiles(extractPath.Value);
+            Cleanup();
+        });
     }
 
-    private static string UnzipFile(string zipPath, string extractPath)
+    private static void UpdateAppFiles(string extractPath)
     {
-        ZipFile.ExtractToDirectory(zipPath, extractPath);
-        return extractPath;
+        var files = Directory.GetFiles(extractPath);
+
+        foreach (var filePath in files)
+        {
+            var destFilePath = Path.Combine(Constants.CurrentDirectory, Path.GetFileName(filePath));
+            File.Move(filePath, destFilePath, true);
+        }
+    }
+
+    private static Result<string> ExtractArchive(string archivePath, string extractPath)
+    {
+        var archiveExt = Path.GetExtension(archivePath);
+        if (archiveExt == ".zip")
+        {
+            return Result.Try(() =>
+            {
+                ZipFile.ExtractToDirectory(archivePath, extractPath, true);
+                File.Delete(archivePath);
+                return extractPath;
+            });
+        }
+        else
+        {
+            return Result.Fail($"No support for {archiveExt}");
+        }
     }
 
     private static async Task<string> DownloadFile(string fileUrl, string filePath, CancellationToken cancellationToken)
@@ -104,29 +149,22 @@ public class UpdateManager
         using var downloadStream = await httpClient.GetStreamAsync(fileUrl, cancellationToken);
         using var fileStream = File.Create(filePath);
         await downloadStream.CopyToAsync(fileStream, cancellationToken);
-        fileStream.Flush();
+        await fileStream.FlushAsync(cancellationToken);
         return filePath;
     }
-}
 
-public record Release
-{
-    public required string Version { get; init; }
+    private static void Cleanup()
+    {
+        Directory.Delete(Constants.DownloadDirectory, true);
+    }
 
-    public required string Description { get; init; }
+    private static void Initialize()
+    {
+        if (Directory.Exists(Constants.DownloadDirectory))
+        {
+            Directory.Delete(Constants.DownloadDirectory, true);
+        }
 
-    public required DateTimeOffset CreatedAt { get; init; }
-
-    public DateTimeOffset? PublishedAt { get; init; }
-
-    public required IEnumerable<ReleaseAsset> Assets { get; init; }
-}
-
-public record ReleaseAsset
-{
-    public required OSPlatform OSPlatform { get; init; }
-
-    public required string FileName { get; init; }
-
-    public required string DownloadUrl { get; init; }
+        Directory.CreateDirectory(Constants.DownloadDirectory);
+    }
 }

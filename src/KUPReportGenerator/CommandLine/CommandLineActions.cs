@@ -4,5 +4,4 @@ internal enum CommandLineActions
 {
     Run,
     Install,
-    Update,
 }
