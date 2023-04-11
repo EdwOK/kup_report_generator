@@ -16,7 +16,7 @@ public static class CredentialManager
         }
         else if (EnvironmentUtils.IsLinuxPlatform())
         {
-            return Result.Try<ICredentialStore>(() => new CommandContext(GetApplicationPath()).CredentialStore);
+            return Result.Try<ICredentialStore>(() => new CommandContext(new[] { GetApplicationPath() }).CredentialStore);
         }
         else if (EnvironmentUtils.IsMacOSPlatform())
         {
