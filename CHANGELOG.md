@@ -1,3 +1,25 @@
+## [2.10.0](https://github.com/EdwOK/kup_report_generator/compare/2.9.0...2.10.0) (2023-04-11)
+
+
+### Features
+
+* update semantic-release version ([f828624](https://github.com/EdwOK/kup_report_generator/commit/f828624978993fb630e60f46aefb02e35f2dfe69))
+* update semantic-release version ([3a17754](https://github.com/EdwOK/kup_report_generator/commit/3a177542d1aa91f0b45addeaeb144bfd72e4eafb))
+
+
+### Bug Fixes
+
+* build ([e8e2f35](https://github.com/EdwOK/kup_report_generator/commit/e8e2f35ff81ca543d717d0f480d875ed507c21bd))
+* build ([156cfa6](https://github.com/EdwOK/kup_report_generator/commit/156cfa6a2e79c93c80620600e1536f2b9840a20a))
+* linter and node version ([e809973](https://github.com/EdwOK/kup_report_generator/commit/e809973f236dd9528b98e5902106502e7c2637b8))
+* linter and node version ([3ddbcf0](https://github.com/EdwOK/kup_report_generator/commit/3ddbcf0ab25022a2c534a8c4387751c6e74dcae2))
+* up node version ([0b8a865](https://github.com/EdwOK/kup_report_generator/commit/0b8a86580820282d1b3bf0364eaa0fdbe56bf4ba))
+
+
+### Build System
+
+* **deps:** bump FluentValidation from 11.4.0 to 11.5.2 ([8390c21](https://github.com/EdwOK/kup_report_generator/commit/8390c21c4172a815c06b692958dd7d5a241d7cb4))
+
 ## [2.9.0](https://github.com/EdwOK/kup_report_generator/compare/2.8.0...2.9.0) (2023-01-28)
 
 
