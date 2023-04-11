@@ -36,10 +36,11 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
 
         var saveCommitsHistoryTask = _progressContext.AddTask("[green]Saving commits history in the report file.[/]");
         saveCommitsHistoryTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, Encoding.UTF8.GetBytes(commitsHistory.Value),
+        await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, Encoding.UTF8.GetBytes(commitsHistory.Value),
             cancellationToken);
         saveCommitsHistoryTask.Increment(50.0);
-        return saveResult;
+
+        return Result.Ok();
     }
 
     private async Task<Result<string>> BuildCommitsHistory(ReportGeneratorContext reportContext, CancellationToken cancellationToken)

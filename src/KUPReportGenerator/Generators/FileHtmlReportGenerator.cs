@@ -28,15 +28,11 @@ internal class FileHtmlReportGenerator : IReportGenerator
 
         var saveHtmlReportTask = _progressContext.AddTask("[green]Saving html report in a file.[/]");
         saveHtmlReportTask.Increment(50.0);
-        var saveResult = await FileHelper.SaveAsync(Constants.HtmlReportFilePath, Encoding.UTF8.GetBytes(htmlReport.Value),
+        await FileHelper.SaveAsync(Constants.HtmlReportFilePath, Encoding.UTF8.GetBytes(htmlReport.Value),
             cancellationToken);
         saveHtmlReportTask.Increment(50.0);
-        if (saveResult.IsFailed)
-        {
-            return saveResult;
-        }
 
-        return saveResult;
+        return Result.Ok();
     }
 
     private static async Task<Result<string>> GenerateHtmlReport(ReportGeneratorContext reportContext,

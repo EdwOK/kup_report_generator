@@ -45,28 +45,24 @@ finally
     Console.ReadKey();
 }
 
-async Task<ResultBase> Install(CancellationToken cancellationToken)
+async Task<Result> Install(CancellationToken cancellationToken)
 {
     var installManager = new InstallManager();
 
     var releases = await installManager.GetReleases(cancellationToken);
-    if (releases.IsFailed)
-    {
-        return releases;
-    }
 
     var version =
         await new SelectionPrompt<string>()
             .Title("What's [green]release version[/] would you like to update to?")
             .PageSize(15)
             .MoreChoicesText("[grey](Move up and down to reveal more release versions)[/]")
-            .AddChoices(releases.Value.Select(r => r.Version))
+            .AddChoices(releases.Select(r => r.Version))
             .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-    var release = releases.Value.FirstOrDefault(r => r.Version == version);
+    var release = releases.FirstOrDefault(r => r.Version == version);
     if (release is null)
     {
-        return releases;
+        return Result.Fail($"Release for version {version} not found.");
     }
 
     AnsiConsole.MarkupLine("[green]Installing...[/]");

@@ -87,7 +87,12 @@ try
             }
         });
 
-    return await rootCommand.InvokeAsync(args);
+    await rootCommand.InvokeAsync(args);
+}
+catch (Exception exc)
+{
+    AnsiConsole.WriteException(exc);
+    Log.Error(exc, exc.Message);
 }
 finally
 {
@@ -100,11 +105,7 @@ finally
 
 async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationToken)
 {
-    var initialize = Initialize(cancellationToken);
-    if (initialize.IsFailed)
-    {
-        return initialize;
-    }
+    var outputDirectoryPath = CreateOutputDirectory(Constants.OutputDirectory);
 
     var reportSettings = await ReportSettings.OpenAsync(fileInfo.ToString(), cancellationToken);
     if (reportSettings.IsFailed)
@@ -121,7 +122,7 @@ async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationTok
     }
 
     var currentMonthName = DatetimeHelper.GetCurrentMonthName();
-    var currentMonthWorkingDays = await GetCurrentMonthWorkingDays(reportSettings.Value, cancellationToken);
+    var currentMonthWorkingDays = await GetCurrentMonthWorkingDays(reportSettings.Value.RapidApiKey, cancellationToken);
     if (currentMonthWorkingDays.IsFailed)
     {
         return currentMonthWorkingDays.ToResult();
@@ -163,16 +164,16 @@ async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationTok
         });
 }
 
-async Task<Result<ushort>> GetCurrentMonthWorkingDays(ReportSettings reportSettings,
+async Task<Result<ushort>> GetCurrentMonthWorkingDays(string? rapidApiKey,
     CancellationToken cancellationToken)
 {
     const ushort defaultWorkingDays = 21;
-    if (string.IsNullOrEmpty(reportSettings.RapidApiKey))
+    if (string.IsNullOrEmpty(rapidApiKey))
     {
         return defaultWorkingDays;
     }
 
-    using var rapidApi = new RapidApi(reportSettings.RapidApiKey);
+    using var rapidApi = new RapidApi(rapidApiKey);
 
     var startDate = DatetimeHelper.GetFirstDateOfCurrentMonth();
     var endDate = DatetimeHelper.GetLastDateOfCurrentMonth();
@@ -284,24 +285,13 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
     return saveNewReportSettings.ToResult();
 }
 
-Result Initialize(CancellationToken cancellationToken)
+string CreateOutputDirectory(string directoryPath)
 {
-    try
+    if (Directory.Exists(directoryPath))
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (Directory.Exists(Constants.OutputDirectory))
-        {
-            Directory.Delete(Constants.OutputDirectory, true);
-        }
-
-        Directory.CreateDirectory(Constants.OutputDirectory);
-        return Result.Ok();
+        Directory.Delete(directoryPath, true);
     }
-    catch (Exception exc)
-    {
-        return Result.Fail(
-            new Error($"Initialization failed. Could\'t create output directory: {Constants.OutputDirectory}.")
-                .CausedBy(exc));
-    }
+
+    Directory.CreateDirectory(directoryPath);
+    return directoryPath;
 }
