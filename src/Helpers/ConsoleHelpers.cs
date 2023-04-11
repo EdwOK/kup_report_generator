@@ -39,6 +39,5 @@ public static class ConsoleHelpers
         }
 
         AnsiConsole.Write(table);
-        AnsiConsole.WriteLine("See details in logs.txt");
     }
 }

@@ -23,47 +23,46 @@ public class GoogleChromePdfConvert : IPdfConverter
         var html = await FileHelper.ReadAsync(htmlPath, cancellationToken);
         if (html.IsFailed)
         {
-            return html.ToResult().WithError(error);
+            return error.CausedBy(html.Errors);
         }
 
-        try
+        using var browserFetcher = new BrowserFetcher();
+
+        var canDownload = await Result.Try(() => browserFetcher.CanDownloadAsync(BrowserFetcher.DefaultChromiumRevision)
+            .WaitAsync(cancellationToken));
+        if (canDownload.IsFailed)
         {
-            using var browserFetcher = new BrowserFetcher();
-
-            var canDownload = await browserFetcher.CanDownloadAsync(BrowserFetcher.DefaultChromiumRevision);
-            if (!canDownload)
-            {
-                return Result.Fail(error).WithError("Unable to download Google Chrome.");
-            }
-
-            var revisionInfo = await browserFetcher.DownloadAsync();
-            if (revisionInfo is null || revisionInfo?.Downloaded is false)
-            {
-                return Result.Fail(error).WithError("Error while downloading Google Chrome.");
-            }
-
-            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-            {
-                ExecutablePath = revisionInfo!.ExecutablePath,
-                Headless = true,
-                Args = new[] { "--disable-gpu", "--print-to-pdf-no-header" }
-            });
-
-            if (!browser.IsConnected)
-            {
-                return Result.Fail(error).WithError("Google Chrome process can't start.");
-            }
-
-            await using var page = await browser.NewPageAsync();
-            await page.SetContentAsync(html.Value);
-            var pdf = await page.PdfDataAsync();
-
-            var saveResult = await FileHelper.SaveAsync(Constants.PdfReportFilePath, pdf, cancellationToken);
-            return saveResult;
+            return new Error("Unable to download Google Chrome.").CausedBy(canDownload.Errors);
         }
-        catch (Exception exc)
+
+        var revisionInfo = await Result.Try(() => browserFetcher.DownloadAsync().WaitAsync(cancellationToken));
+        if (revisionInfo.IsFailed)
         {
-            return Result.Fail(error.CausedBy(exc));
+            return new Error("Error while downloading Google Chrome.").CausedBy(revisionInfo.Errors);
         }
+
+        if (revisionInfo.ValueOrDefault?.Downloaded is false)
+        {
+            return new Error("Error while downloading Google Chrome.");
+        }
+
+        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            ExecutablePath = revisionInfo.Value.ExecutablePath,
+            Headless = true,
+            Args = new[] { "--disable-gpu", "--print-to-pdf-no-header" }
+        });
+
+        if (!browser.IsConnected)
+        {
+            return Result.Fail(error).WithError("Google Chrome process can't start.");
+        }
+
+        await using var page = await browser.NewPageAsync();
+        await page.SetContentAsync(html.Value);
+        var pdf = await page.PdfDataAsync();
+        await FileHelper.SaveAsync(Constants.PdfReportFilePath, pdf, cancellationToken);
+
+        return Result.Ok();
     }
 }

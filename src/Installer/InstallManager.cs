@@ -12,18 +12,14 @@ public class InstallManager : IInstallManager
     public InstallManager() =>
         _client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue(nameof(KUPReportGenerator)));
 
-    public async Task<Result<IEnumerable<Release>>> GetReleases(CancellationToken cancellationToken)
+    public async Task<IEnumerable<Release>> GetReleases(CancellationToken cancellationToken)
     {
-        var repoReleases = await Result.Try(() => _client.Repository.Release.GetAll(Constants.RepositoryOwner, Constants.Repository)
-            .WaitAsync(cancellationToken));
-        if (repoReleases.IsFailed)
-        {
-            return repoReleases.ToResult();
-        }
+        var repoReleases = await _client.Repository.Release.GetAll(Constants.RepositoryOwner, Constants.Repository)
+            .WaitAsync(cancellationToken);
 
         var releases = new List<Release>();
 
-        foreach (var release in repoReleases.Value)
+        foreach (var release in repoReleases)
         {
             var assets = release.Assets.Select(a =>
             {
@@ -40,7 +36,7 @@ public class InstallManager : IInstallManager
                     DownloadUrl = a.BrowserDownloadUrl,
                 };
             })
-            .Where(a => a != null)
+            .Where(a => a is not null)
             .ToArray();
 
             if (!assets.Any())
@@ -87,41 +83,50 @@ public class InstallManager : IInstallManager
             return Result.Fail($"No release asset found for the {osPlatform} OS platform.");
         }
 
-        var init = Result.Try(Initialize);
-        if (init.IsFailed)
-        {
-            return init;
-        }
+        var downloadDirectoryPath = CreateDownloadDirectory(Constants.DownloadDirectory);
 
-        var archivePath = Path.Combine(Constants.DownloadDirectory, $"{release.Version}-{releaseAsset!.FileName}");
+        var archivePath = Path.Combine(downloadDirectoryPath, $"{release.Version}-{releaseAsset!.FileName}");
 
-        var downloadedArchive = await Result.Try(() => DownloadFile(releaseAsset.DownloadUrl, archivePath, cancellationToken));
-        if (downloadedArchive.IsFailed)
-        {
-            return downloadedArchive.ToResult();
-        }
+        var downloadedArchive = await DownloadFile(releaseAsset.DownloadUrl, archivePath, cancellationToken);
 
-        var extractPath = ExtractArchive(downloadedArchive.Value, Constants.DownloadDirectory);
+        var extractPath = ExtractArchive(downloadedArchive, downloadDirectoryPath);
         if (extractPath.IsFailed)
         {
             return extractPath.ToResult();
         }
 
-        return Result.Try(() =>
-        {
-            UpdateAppFiles(extractPath.Value);
-            Cleanup();
-        });
+        UpdateAppFiles(Constants.CurrentDirectory, extractPath.Value);
+
+        return Result.Ok();
     }
 
-    private static void UpdateAppFiles(string extractPath)
+    private static string CreateDownloadDirectory(string directoryPath)
     {
-        var files = Directory.GetFiles(extractPath);
-
-        foreach (var filePath in files)
+        if (Directory.Exists(directoryPath))
         {
-            var destFilePath = Path.Combine(Constants.CurrentDirectory, Path.GetFileName(filePath));
-            File.Move(filePath, destFilePath, true);
+            Directory.Delete(directoryPath, true);
+        }
+
+        Directory.CreateDirectory(directoryPath);
+        return directoryPath;
+    }
+
+    private static void UpdateAppFiles(string destinationPath, string extractPath)
+    {
+        var newFiles = Directory.GetFiles(extractPath);
+
+        foreach (var newFilePath in newFiles)
+        {
+            var newFileName = Path.GetFileName(newFilePath);
+
+            var destFilePath = Path.Combine(destinationPath, newFileName);
+            if (File.Exists(destFilePath))
+            {
+                var oldFilePath = Path.Combine(extractPath, $"{newFileName}.old");
+                File.Move(destFilePath, oldFilePath, true);
+            }
+
+            File.Move(newFilePath, destFilePath, true);
         }
     }
 
@@ -151,20 +156,5 @@ public class InstallManager : IInstallManager
         await downloadStream.CopyToAsync(fileStream, cancellationToken);
         await fileStream.FlushAsync(cancellationToken);
         return filePath;
-    }
-
-    private static void Cleanup()
-    {
-        Directory.Delete(Constants.DownloadDirectory, true);
-    }
-
-    private static void Initialize()
-    {
-        if (Directory.Exists(Constants.DownloadDirectory))
-        {
-            Directory.Delete(Constants.DownloadDirectory, true);
-        }
-
-        Directory.CreateDirectory(Constants.DownloadDirectory);
     }
 }
