@@ -1,90 +1,20 @@
-﻿using System.Buffers;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Runtime.InteropServices;
 using FluentResults;
 
 namespace KUPReportGenerator.Installer;
 
-public class InstallManager : IInstallManager
+public class AppInstaller
 {
-    private readonly Octokit.IGitHubClient _client;
-
-    public InstallManager() =>
-        _client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue(nameof(KUPReportGenerator)));
-
-    public async Task<IEnumerable<Release>> GetReleases(CancellationToken cancellationToken)
-    {
-        var repoReleases = await _client.Repository.Release.GetAll(Constants.RepositoryOwner, Constants.Repository)
-            .WaitAsync(cancellationToken);
-
-        var releases = new List<Release>();
-
-        foreach (var release in repoReleases)
-        {
-            var assets = release.Assets.Select(a =>
-            {
-                var osPlatform = GetOSPlatform(a.Name);
-                if (osPlatform is null)
-                {
-                    return null;
-                }
-
-                return new ReleaseAsset
-                {
-                    FileName = a.Name,
-                    OSPlatform = (OSPlatform)osPlatform,
-                    DownloadUrl = a.BrowserDownloadUrl,
-                };
-            })
-            .Where(a => a is not null)
-            .ToArray();
-
-            if (!assets.Any())
-            {
-                continue;
-            }
-
-            releases.Add(new Release
-            {
-                Version = release.TagName,
-                Description = release.Body,
-                CreatedAt = release.CreatedAt,
-                PublishedAt = release.PublishedAt,
-                Assets = assets!
-            });
-        }
-
-        return releases;
-
-        static OSPlatform? GetOSPlatform(string name)
-        {
-            if (name.Contains("win"))
-            {
-                return OSPlatform.Windows;
-            }
-            else if (name.Contains("linux"))
-            {
-                return OSPlatform.Linux;
-            }
-            else if (name.Contains("macos"))
-            {
-                return OSPlatform.OSX;
-            }
-
-            return null;
-        }
-    }
-
     public async Task<Result> Install(Release release, OSPlatform osPlatform, CancellationToken cancellationToken)
     {
         var releaseAsset = release.Assets.FirstOrDefault(a => a.OSPlatform.Equals(osPlatform));
         if (releaseAsset is null)
         {
-            return Result.Fail($"No release asset found for the {osPlatform} OS platform.");
+            return Result.Fail($"No release asset found for the specified {osPlatform} OS platform.");
         }
 
         var downloadDirectoryPath = CreateDownloadDirectory(Constants.DownloadDirectory);
-
         var archivePath = Path.Combine(downloadDirectoryPath, $"{release.Version}-{releaseAsset!.FileName}");
 
         var downloadedArchive = await DownloadFile(releaseAsset.DownloadUrl, archivePath, cancellationToken);

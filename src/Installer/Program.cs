@@ -1,5 +1,5 @@
-﻿using System.Runtime.InteropServices;
-using FluentResults;
+﻿using FluentResults;
+using Installer;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Installer;
 using Serilog;
@@ -23,7 +23,7 @@ try
         e.Cancel = true;
     };
 
-    AnsiConsole.Write(new FigletText("Installer").Centered().Color(Color.Green1));
+    AnsiConsole.Write(new FigletText("AppInstaller").Centered().Color(Color.Green1));
     AnsiConsole.MarkupLine("Started, Press [green]Ctrl-C[/] to stop.");
 
     var install = await Install(cancellationToken);
@@ -47,9 +47,8 @@ finally
 
 async Task<Result> Install(CancellationToken cancellationToken)
 {
-    var installManager = new InstallManager();
-
-    var releases = await installManager.GetReleases(cancellationToken);
+    var repository = new GithubRepository(Constants.RepositoryOwner, Constants.Repository);
+    var releases = await repository.GetReleases(cancellationToken);
 
     var version =
         await new SelectionPrompt<string>()
@@ -67,7 +66,8 @@ async Task<Result> Install(CancellationToken cancellationToken)
 
     AnsiConsole.MarkupLine("[green]Installing...[/]");
 
-    var install = await installManager.Install(release!, OSPlatform.Windows, cancellationToken);
+    var appInstaller = new KUPReportGenerator.Installer.AppInstaller();
+    var install = await appInstaller.Install(release!, Constants.CurrentOSPlatform, cancellationToken);
     if (install.IsFailed)
     {
         return install;
