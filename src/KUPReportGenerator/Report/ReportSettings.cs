@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using FluentResults;
 using KUPReportGenerator.Helpers;
 
-namespace KUPReportGenerator;
+namespace KUPReportGenerator.Report;
 
 public record ReportSettings
 {
@@ -56,7 +56,7 @@ public record ReportSettings
         try
         {
             await using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(reportSettingsText.Value));
-            reportSettings = await JsonSerializer.DeserializeAsync(memoryStream, cancellationToken: cancellationToken,
+            reportSettings = await JsonSerializer.DeserializeAsync<ReportSettings>(memoryStream, cancellationToken: cancellationToken,
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
             if (reportSettings is null)
             {

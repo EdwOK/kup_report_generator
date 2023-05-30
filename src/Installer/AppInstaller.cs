@@ -62,20 +62,17 @@ public class AppInstaller
 
     private static Result<string> ExtractArchive(string archivePath, string extractPath)
     {
-        var archiveExt = Path.GetExtension(archivePath);
-        if (archiveExt == ".zip")
+        var archiveExtension = Path.GetExtension(archivePath);
+        return archiveExtension switch
         {
-            return Result.Try(() =>
+            ".zip" => Result.Try(() =>
             {
                 ZipFile.ExtractToDirectory(archivePath, extractPath, true);
                 File.Delete(archivePath);
                 return extractPath;
-            });
-        }
-        else
-        {
-            return Result.Fail($"No support for {archiveExt}");
-        }
+            }),
+            _ => Result.Fail($"No support for {archiveExtension}")
+        };
     }
 
     private static async Task<string> DownloadFile(string fileUrl, string filePath, CancellationToken cancellationToken)

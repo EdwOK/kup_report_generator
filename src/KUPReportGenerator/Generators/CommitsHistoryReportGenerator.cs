@@ -2,8 +2,8 @@
 using FluentResults;
 using KUPReportGenerator.GitCommitsHistory;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Report;
-using KUPReportGenerator.TaskProgress;
 using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
@@ -24,23 +24,14 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
     public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
         var commitsHistory = await BuildCommitsHistory(reportContext, cancellationToken);
-        if (commitsHistory.IsFailed)
-        {
-            return commitsHistory.ToResult();
-        }
-
-        if (commitsHistory.ValueOrDefault.Length is 0)
-        {
-            return Result.Fail("Commits history is empty.");
-        }
 
         var saveCommitsHistoryTask = _progressContext.AddTask("[green]Saving commits history in the report file.[/]");
         saveCommitsHistoryTask.Increment(50.0);
-        await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, Encoding.UTF8.GetBytes(commitsHistory.Value),
+        await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, Encoding.UTF8.GetBytes(commitsHistory.ValueOrDefault ?? ""),
             cancellationToken);
         saveCommitsHistoryTask.Increment(50.0);
 
-        return Result.Ok();
+        return commitsHistory.ToResult();
     }
 
     private async Task<Result<string>> BuildCommitsHistory(ReportGeneratorContext reportContext, CancellationToken cancellationToken)

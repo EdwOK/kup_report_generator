@@ -2,9 +2,9 @@
 using FluentResults;
 using HandlebarsDotNet;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Properties;
 using KUPReportGenerator.Report;
-using KUPReportGenerator.TaskProgress;
 
 namespace KUPReportGenerator.Generators;
 
