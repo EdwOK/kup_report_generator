@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using Installer;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Installer;
 using Serilog;
 using Spectre.Console;
@@ -26,7 +27,15 @@ try
     AnsiConsole.Write(new FigletText("AppInstaller").Centered().Color(Color.Green1));
     AnsiConsole.MarkupLine("Started, Press [green]Ctrl-C[/] to stop.");
 
-    var install = await Install(cancellationToken);
+    var install = await AnsiConsole.Progress()
+        .AutoClear(false)
+        .Columns(
+            new TaskDescriptionColumn(),
+            new ProgressBarColumn(),
+            new PercentageColumn(),
+            new RemainingTimeColumn())
+        .StartAsync(async progressContext => await Install(cancellationToken, new SpectreConsoleProgressContext(progressContext)));
+
     if (ConsoleHelpers.HasErrors(install))
     {
         ConsoleHelpers.WriteErrors(install);
@@ -45,9 +54,10 @@ finally
     Console.ReadKey();
 }
 
-async Task<Result> Install(CancellationToken cancellationToken)
+async Task<Result> Install(CancellationToken cancellationToken, SpectreConsoleProgressContext progressContext)
 {
-    var repository = new GithubRepository(Constants.RepositoryOwner, Constants.Repository);
+    var repository = new GithubRepository(Constants.RepositoryOwner, Constants.Repository, progressContext);
+
     var releases = await repository.GetReleases(cancellationToken);
 
     var version =
@@ -64,9 +74,7 @@ async Task<Result> Install(CancellationToken cancellationToken)
         return Result.Fail($"Release for version {version} not found.");
     }
 
-    AnsiConsole.MarkupLine("[green]Installing...[/]");
-
-    var appInstaller = new KUPReportGenerator.Installer.AppInstaller();
+    var appInstaller = new AppInstaller();
     var install = await appInstaller.Install(release!, Constants.CurrentOSPlatform, cancellationToken);
     if (install.IsFailed)
     {

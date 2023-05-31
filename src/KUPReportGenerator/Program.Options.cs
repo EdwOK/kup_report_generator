@@ -1,19 +1,21 @@
 ﻿using System.CommandLine;
+using KUPReportGenerator;
 
-namespace KUPReportGenerator.Helpers;
-
-internal static class CommandLineHelper
+internal static partial class Program
 {
-    private static readonly Option<FileInfo> SettingsFileOption = new("--settings-file")
+    internal enum CommandLineActions
     {
-        IsRequired = false,
-        Description = "Path to the settings file. Defaults is current directory."
-    };
+        Run,
+        Install,
+    }
 
-    static CommandLineHelper()
+    private static readonly Option<FileInfo> _settingsFileOption =
+        new("--settings-file", "Path to the settings file. Defaults is current directory.");
+
+    static Program()
     {
-        SettingsFileOption.SetDefaultValue(new FileInfo(Constants.SettingsFilePath));
-        SettingsFileOption.AddValidator(result =>
+        _settingsFileOption.SetDefaultValue(new FileInfo(Constants.SettingsFilePath));
+        _settingsFileOption.AddValidator(result =>
         {
             foreach (var token in result.Tokens)
             {
@@ -32,11 +34,11 @@ internal static class CommandLineHelper
         });
     }
 
-    public static RootCommand CreateRootCommand(Func<FileInfo, Task> handler)
+    private static RootCommand BuildRootCommand(Func<FileInfo, Task> handler)
     {
         var rootCommand = new RootCommand();
-        rootCommand.AddGlobalOption(SettingsFileOption);
-        rootCommand.SetHandler(handler, SettingsFileOption);
+        rootCommand.AddGlobalOption(_settingsFileOption);
+        rootCommand.SetHandler(handler, _settingsFileOption);
         return rootCommand;
     }
 }

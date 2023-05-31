@@ -2,12 +2,11 @@
 using FluentResults;
 using GitCredentialManager;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Report;
-using KUPReportGenerator.TaskProgress;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
-using CredentialManager = KUPReportGenerator.Helpers.CredentialManager;
 
 namespace KUPReportGenerator.GitCommitsHistory;
 
@@ -35,15 +34,15 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
 
             var connectionTask = _progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
-            var clientResult = TryConnectToAdo(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
+            var gitClientResult = CreateGitClient(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
                 cancellationToken);
             connectionTask.Increment(50.0);
-            if (clientResult.IsFailed)
+            if (gitClientResult.IsFailed)
             {
-                return clientResult.ToResult();
+                return gitClientResult.ToResult();
             }
 
-            using var client = clientResult.Value;
+            using var client = gitClientResult.Value;
 
             var repositories = await Result.Try(() => client.GetRepositoriesAsync(cancellationToken: cancellationToken));
             if (repositories.IsFailed)
@@ -129,7 +128,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
         }
     }
 
-    private static Result<GitHttpClient> TryConnectToAdo(ICredential credentials, string organization,
+    private static Result<GitHttpClient> CreateGitClient(ICredential credentials, string organization,
         CancellationToken cancellationToken)
     {
         try
@@ -147,7 +146,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
 
     private static Result<ICredential> FindCredentials(string email, string organization)
     {
-        var store = CredentialManager.Create(nameof(KUPReportGenerator));
+        var store = Result.Try(() => CredentialManager.Create(nameof(KUPReportGenerator)));
         if (store.IsFailed)
         {
             return store.ToResult();

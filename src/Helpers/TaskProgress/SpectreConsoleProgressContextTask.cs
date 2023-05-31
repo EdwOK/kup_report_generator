@@ -1,8 +1,8 @@
 ﻿using Spectre.Console;
 
-namespace KUPReportGenerator.TaskProgress;
+namespace KUPReportGenerator.Helpers.TaskProgress;
 
-internal class SpectreConsoleProgressContextTask : IProgressContextTask
+public class SpectreConsoleProgressContextTask : IProgressContextTask
 {
     private readonly ProgressTask _task;
     private readonly IProgress<double> _progress;
