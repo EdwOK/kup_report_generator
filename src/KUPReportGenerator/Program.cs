@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
+using System.Runtime.InteropServices;
 using CliWrap;
 using FluentResults;
 using KUPReportGenerator;
-using KUPReportGenerator.CommandLine;
 using KUPReportGenerator.Converters;
 using KUPReportGenerator.Generators;
 using KUPReportGenerator.GitCommitsHistory;
 using KUPReportGenerator.Helpers;
+using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Report;
-using KUPReportGenerator.TaskProgress;
 using Serilog;
 using Spectre.Console;
 
@@ -21,7 +21,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    var rootCommand = CommandLineBuilder.BuildRootCommand(
+    var rootCommand = BuildRootCommand(
         async (fileInfo) =>
         {
             using var cancellationTokenSource = new CancellationTokenSource();
@@ -49,23 +49,16 @@ try
                         var result = await RunAsync(fileInfo, cancellationToken);
                         if (result.IsSuccess)
                         {
-                            AnsiConsole.MarkupLine("[green]Done[/]. Reports are successfully generated: ");
-                            AnsiConsole.MarkupLine($"- [green]{Constants.HtmlReportFilePath}[/]");
-                            AnsiConsole.MarkupLine($"- [green]{Constants.PdfReportFilePath}[/]");
-                            AnsiConsole.MarkupLine($"- [green]{Constants.CommitsHistoryFilePath}[/]");
-
-                            if (EnvironmentUtils.IsWindowsPlatform())
-                            {
-                                await Cli.Wrap("cmd")
-                                    .WithArguments($"/c start {Constants.OutputDirectory}")
-                                    .ExecuteAsync(cancellationToken);
-                            }
+                            AnsiConsole.MarkupLine("[green]Done[/]. Reports are successfully generated.");
                         }
                         else if (ConsoleHelpers.HasErrors(result))
                         {
                             AnsiConsole.MarkupLine("[red]Done[/]. Reports are generated with [red]errors[/]: ");
                             ConsoleHelpers.WriteErrors(result);
                         }
+
+                        AnsiConsole.MarkupLine($"Open [green]{Constants.OutputDirectory}[/] folder to see the report results.");
+                        await OpenOutputDirectory(cancellationToken);
 
                         break;
                     }
@@ -101,6 +94,35 @@ finally
     AnsiConsole.WriteLine();
     AnsiConsole.MarkupLine("Press [green]any[/] key to exit.");
     Console.ReadKey();
+}
+
+string CreateOutputDirectory(string directoryPath)
+{
+    if (Directory.Exists(directoryPath))
+    {
+        Directory.Delete(directoryPath, true);
+    }
+
+    Directory.CreateDirectory(directoryPath);
+    return directoryPath;
+}
+
+async Task OpenOutputDirectory(CancellationToken cancellationToken)
+{
+    var shell = "cmd";
+    var arguments = $"/c start {Constants.OutputDirectory}";
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+    {
+        shell = "bash";
+        arguments = $"-c open {Constants.OutputDirectory}";
+    }
+    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    {
+        shell = "bash";
+        arguments = $"-c xdg-open {Constants.OutputDirectory}";
+    }
+
+    await Cli.Wrap(shell).WithArguments(arguments).ExecuteAsync(cancellationToken);
 }
 
 async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationToken)
@@ -153,14 +175,14 @@ async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationTok
         {
             var spectralProgressContext = new SpectreConsoleProgressContext(progressContext);
 
-            var reportGenerator = new ReportGeneratorComposite(new IReportGenerator[]
+            var reportGeneratorPipeline = new ReportGeneratorPipeline(new IReportGenerator[]
             {
                 new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
                 new FileHtmlReportGenerator(spectralProgressContext),
                 new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
             });
 
-            return await reportGenerator.Generate(reportContext, cancellationToken);
+            return await reportGeneratorPipeline.Generate(reportContext, cancellationToken);
         });
 }
 
@@ -283,15 +305,4 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
 
     var saveNewReportSettings = await newReportSettings.SaveAsync(fileInfo.ToString(), cancellationToken);
     return saveNewReportSettings.ToResult();
-}
-
-string CreateOutputDirectory(string directoryPath)
-{
-    if (Directory.Exists(directoryPath))
-    {
-        Directory.Delete(directoryPath, true);
-    }
-
-    Directory.CreateDirectory(directoryPath);
-    return directoryPath;
 }

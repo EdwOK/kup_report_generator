@@ -1,3 +1,15 @@
+## [2.11.0](https://github.com/EdwOK/kup_report_generator/compare/2.10.0...2.11.0) (2023-05-31)
+
+
+### Features
+
+* stability of report generator pipeline ([#69](https://github.com/EdwOK/kup_report_generator/issues/69)) ([03f722d](https://github.com/EdwOK/kup_report_generator/commit/03f722d6f492e35faa00516141878378a920cfdc))
+
+
+### Build System
+
+* **deps:** bump Octokit from 5.0.3 to 5.0.4 ([935ed35](https://github.com/EdwOK/kup_report_generator/commit/935ed357bc8322467e9bb2da8369422d5f0bac92))
+
 ## [2.10.0](https://github.com/EdwOK/kup_report_generator/compare/2.9.0...2.10.0) (2023-04-11)
 
 

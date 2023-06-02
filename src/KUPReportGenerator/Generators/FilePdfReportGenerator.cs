@@ -1,14 +1,14 @@
 ﻿using FluentResults;
 using KUPReportGenerator.Converters;
+using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Report;
-using KUPReportGenerator.TaskProgress;
 
 namespace KUPReportGenerator.Generators;
 
 internal class FilePdfReportGenerator : IReportGenerator
 {
     private readonly IProgressContext _progressContext;
-    private IPdfConverter _pdfConverter;
+    private readonly IPdfConverter _pdfConverter;
 
     public FilePdfReportGenerator(IProgressContext progressContext, IPdfConverter pdfConverter)
     {

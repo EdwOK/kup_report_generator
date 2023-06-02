@@ -6,10 +6,10 @@
 
   <ItemGroup>
     <PackageReference Include="FluentResults" Version="3.15.2" />
-    <PackageReference Include="Octokit" Version="5.0.4" />
-    <PackageReference Include="Spectre.Console" Version="0.46.0" />
-    <PackageReference Include="Devlooped.CredentialManager" Version="2.0.935" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.170.0" />
+    <PackageReference Include="Octokit" Version="6.0.0" />
+    <PackageReference Include="Spectre.Console" Version="0.47.0" />
+    <PackageReference Include="Devlooped.CredentialManager" Version="2.1.1" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.205.1" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.205.1" />
   </ItemGroup>
   

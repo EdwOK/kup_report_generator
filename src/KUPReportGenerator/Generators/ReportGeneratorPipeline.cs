@@ -3,24 +3,24 @@ using KUPReportGenerator.Report;
 
 namespace KUPReportGenerator.Generators;
 
-public class ReportGeneratorComposite : IReportGenerator
+public class ReportGeneratorPipeline : IReportGenerator
 {
     private readonly IEnumerable<IReportGenerator> _reportGenerators;
 
-    public ReportGeneratorComposite(IEnumerable<IReportGenerator> reportGenerators) =>
+    public ReportGeneratorPipeline(IEnumerable<IReportGenerator> reportGenerators) =>
         _reportGenerators = reportGenerators;
 
     public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
+        var reportResult = Result.Ok();
+
         foreach (var reportGenerator in _reportGenerators)
         {
-            var reportResult = await reportGenerator.Generate(reportContext, cancellationToken);
-            if (reportResult.IsFailed)
-            {
-                return reportResult;
-            }
+            var generatorResult = await reportGenerator.Generate(reportContext, cancellationToken);
+
+            reportResult = Result.Merge(reportResult, generatorResult);
         }
 
-        return Result.Ok();
+        return reportResult;
     }
 }
