@@ -20,8 +20,19 @@ public static class FileHelper
 
     public static async Task SaveAsync(string filePath, byte[] data, CancellationToken cancellationToken)
     {
+        EnsureFileDirectoryExists(filePath);
+
         await using var file = File.Create(filePath);
         await file.WriteAsync(data, cancellationToken);
         await file.FlushAsync(cancellationToken);
+    }
+
+    private static void EnsureFileDirectoryExists(string filePath)
+    {
+        var directoryPath = Path.GetDirectoryName(filePath);
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath!);
+        }
     }
 }

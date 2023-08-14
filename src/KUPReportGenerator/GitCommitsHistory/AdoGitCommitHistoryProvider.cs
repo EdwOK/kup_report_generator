@@ -50,8 +50,8 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
                 return repositories.ToResult();
             }
 
-            var fromDate = DatetimeHelper.GetFirstDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
-            var toDate = DatetimeHelper.GetLastDateOfCurrentMonth().ToString(CultureInfo.InvariantCulture);
+            var fromDate = DatetimeHelper.GetFirstDateOfMonth(reportContext.WorkingMonth).ToString(CultureInfo.InvariantCulture);
+            var toDate = DatetimeHelper.GetLastDateOfMonth(reportContext.WorkingMonth).ToString(CultureInfo.InvariantCulture);
             var commitsHistoryDict = new Dictionary<string, IEnumerable<GitCommitRef>>();
 
             var commitsHistoryProgressTask = _progressContext.AddTask("[green]Getting history of commits.[/]",

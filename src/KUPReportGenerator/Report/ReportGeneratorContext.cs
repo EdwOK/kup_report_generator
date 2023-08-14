@@ -1,3 +1,3 @@
 ﻿namespace KUPReportGenerator.Report;
 
-public record ReportGeneratorContext(ReportSettings ReportSettings, ushort? AbsencesDays, ushort? WorkingDays);
+public record ReportGeneratorContext(ReportSettings ReportSettings, string WorkingMonth, ushort? AbsencesDays, ushort? WorkingDays);

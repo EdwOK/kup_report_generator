@@ -56,7 +56,7 @@ public record ReportSettings
         try
         {
             await using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(reportSettingsText.Value));
-            reportSettings = await JsonSerializer.DeserializeAsync<ReportSettings>(memoryStream, cancellationToken: cancellationToken,
+            reportSettings = await JsonSerializer.DeserializeAsync(memoryStream, cancellationToken: cancellationToken,
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
             if (reportSettings is null)
             {
