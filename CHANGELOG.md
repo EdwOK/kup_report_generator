@@ -1,3 +1,10 @@
+## [2.12.0](https://github.com/EdwOK/kup_report_generator/compare/2.11.0...2.12.0) (2023-08-14)
+
+
+### Features
+
+* add generation of report file names based on month and year ([#77](https://github.com/EdwOK/kup_report_generator/issues/77)) ([9939316](https://github.com/EdwOK/kup_report_generator/commit/9939316b5006abce95bafbb2b128c242b04601dc))
+
 ## [2.11.0](https://github.com/EdwOK/kup_report_generator/compare/2.10.0...2.11.0) (2023-05-31)
 
 
