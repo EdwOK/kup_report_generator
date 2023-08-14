@@ -4,13 +4,18 @@ namespace KUPReportGenerator.Helpers;
 
 public static class DatetimeHelper
 {
+    public static string GetCurrentMonthNameWithYear() => DateTime.UtcNow.ToString("MM_yyyy", CultureInfo.InvariantCulture);
+
     public static string GetCurrentMonthName() => DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
 
-    public static DateTime GetFirstDateOfCurrentMonth()
+    public static string[] GetAllMonthNames() => CultureInfo.InvariantCulture.DateTimeFormat.MonthGenitiveNames[..12];
+
+    public static DateTime GetFirstDateOfMonth(string monthName)
     {
         var currentDate = DateTime.UtcNow;
-        return new DateTime(currentDate.Year, currentDate.Month, 1);
+        var month = DateTime.ParseExact(monthName, "MMMM", CultureInfo.InvariantCulture).Month;
+        return new DateTime(currentDate.Year, month, 1);
     }
 
-    public static DateTime GetLastDateOfCurrentMonth() => GetFirstDateOfCurrentMonth().AddMonths(1).AddDays(-1);
+    public static DateTime GetLastDateOfMonth(string monthName) => GetFirstDateOfMonth(monthName).AddMonths(1).AddDays(-1);
 }
