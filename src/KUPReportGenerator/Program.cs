@@ -173,9 +173,16 @@ async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationTok
         {
             var spectralProgressContext = new SpectreConsoleProgressContext(progressContext);
 
+            IGitCommitHistoryProvider commitHistoryProvider = reportContext.ReportSettings.GitCommitHistoryProvider switch
+            {
+                GitCommitHistoryProviders.AzureDevOps => new AdoGitCommitHistoryProvider(spectralProgressContext),
+                GitCommitHistoryProviders.Local => new LocalGitCommitHistoryProvider(spectralProgressContext),
+                _ => throw new ArgumentException("Invalid commit history provider!")
+            };
+
             var reportGeneratorPipeline = new ReportGeneratorPipeline(new IReportGenerator[]
             {
-                new CommitsHistoryReportGenerator(spectralProgressContext, new AdoGitCommitHistoryProvider(spectralProgressContext)),
+                new CommitsHistoryReportGenerator(spectralProgressContext, commitHistoryProvider),
                 new FileHtmlReportGenerator(spectralProgressContext),
                 new FilePdfReportGenerator(spectralProgressContext, new GoogleChromePdfConvert())
             });
@@ -270,10 +277,29 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
-    var projectAdoOrganizationName = await new TextPrompt<string>("8. What's your [blue]organization name in the Azure DevOps[/]?")
-        .DefaultValue(reportSettings?.ProjectAdoOrganizationName ?? "galera-company")
-        .PromptStyle("yellow")
+    var commitProviderChoise = await new SelectionPrompt<GitCommitHistoryProviders>()
+        .Title("Which [blue]commit provider[/] do you want?")
+        .MoreChoicesText("[grey](Move up and down to choose an action)[/]")
+        .AddChoices(GitCommitHistoryProviders.AzureDevOps, GitCommitHistoryProviders.Local)
         .ShowAsync(AnsiConsole.Console, cancellationToken);
+
+    string? projectGitDirectory = null;
+    string? projectAdoOrganizationName = null;
+
+    if (commitProviderChoise == GitCommitHistoryProviders.Local)
+    {
+        projectGitDirectory = await new TextPrompt<string>("8. What's your [blue]project root directory on your local system[/]?")
+            .DefaultValue(reportSettings?.ProjectGitDirectory ?? "D://GaleraProject//")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
+    }
+    else if (commitProviderChoise == GitCommitHistoryProviders.AzureDevOps)
+    {
+        projectAdoOrganizationName = await new TextPrompt<string>("8. What's your [blue]organization name in the Azure DevOps[/]?")
+            .DefaultValue(reportSettings?.ProjectAdoOrganizationName ?? "galera-company")
+            .PromptStyle("yellow")
+            .ShowAsync(AnsiConsole.Console, cancellationToken);
+    }
 
     string? rapidApiKey = null;
     if (await new ConfirmationPrompt("9. Do you want to automatically get the number of working days in a month?")
@@ -296,8 +322,10 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
         ControlerFullName = controlerFullName,
         ControlerJobPosition = controlerPosition,
         ProjectName = projectName,
+        ProjectGitDirectory = projectGitDirectory,
         ProjectAdoOrganizationName = projectAdoOrganizationName,
-        RapidApiKey = rapidApiKey
+        RapidApiKey = rapidApiKey,
+        GitCommitHistoryProvider = commitProviderChoise,
     };
 
     var saveNewReportSettings = await newReportSettings.SaveAsync(fileInfo.ToString(), cancellationToken);
