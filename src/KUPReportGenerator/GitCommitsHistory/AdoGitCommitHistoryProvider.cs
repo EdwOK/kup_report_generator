@@ -26,7 +26,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
             {
                 return Result.Fail("Failed to get commits from AzureDevOps because an organization hasn't been set. Please reinstall the tool.");
             }
-            
+
             var credentialTask = _progressContext.AddTask("[green]Getting git credentials.[/]");
             credentialTask.Increment(50.0);
             var credentials = FindCredentials(reportContext.ReportSettings.EmployeeEmail,

@@ -16,7 +16,7 @@ internal class LocalGitCommitHistoryProvider : IGitCommitHistoryProvider
     public LocalGitCommitHistoryProvider(IProgressContext progressContext) =>
         _progressContext = progressContext;
 
-    public async Task<Result<IEnumerable<GitCommitHistory>>> GetCommitsHistory(ReportGeneratorContext reportContext, 
+    public async Task<Result<IEnumerable<GitCommitHistory>>> GetCommitsHistory(ReportGeneratorContext reportContext,
         CancellationToken cancellationToken)
     {
         if (!Directory.Exists(reportContext.ReportSettings.ProjectGitDirectory))
@@ -44,7 +44,8 @@ internal class LocalGitCommitHistoryProvider : IGitCommitHistoryProvider
             var commitsHistory = new List<GitCommitHistory>();
             foreach (var (repositoryPath, commitsLine) in commitsByRepositoriesTasks)
             {
-                var commits = commitsLine.Result.ValueOrDefault.Select(s => {
+                var commits = commitsLine.Result.ValueOrDefault.Select(s =>
+                {
                     var parts = s.Split(',');
                     return new GitCommit
                     {
@@ -58,7 +59,7 @@ internal class LocalGitCommitHistoryProvider : IGitCommitHistoryProvider
                         }
                     };
                 }).ToArray();
-                
+
                 if (commits?.Length == 0)
                 {
                     continue;
@@ -84,7 +85,7 @@ internal class LocalGitCommitHistoryProvider : IGitCommitHistoryProvider
     {
         try
         {
-            string arguments = 
+            string arguments =
                 @$"-C ""{repository}"" log  --since=""{from:yyyy-MM-dd}"" --until=""{to:yyyy-MM-dd}"" --date=""short"" --pretty=format:""%h, %an, %ad, %s"" --author=""{authors}"" --no-merges --perl-regexp";
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
