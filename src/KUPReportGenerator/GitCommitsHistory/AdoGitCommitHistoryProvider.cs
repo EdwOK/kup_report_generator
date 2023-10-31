@@ -22,6 +22,11 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
     {
         try
         {
+            if (string.IsNullOrEmpty(reportContext.ReportSettings.ProjectAdoOrganizationName))
+            {
+                return Result.Fail("Failed to get commits from AzureDevOps because an organization hasn't been set. Please reinstall the tool.");
+            }
+            
             var credentialTask = _progressContext.AddTask("[green]Getting git credentials.[/]");
             credentialTask.Increment(50.0);
             var credentials = FindCredentials(reportContext.ReportSettings.EmployeeEmail,
@@ -34,15 +39,15 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
 
             var connectionTask = _progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
-            var gitClientResult = CreateGitClient(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
+            var gitClient = CreateGitClient(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
                 cancellationToken);
             connectionTask.Increment(50.0);
-            if (gitClientResult.IsFailed)
+            if (gitClient.IsFailed)
             {
-                return gitClientResult.ToResult();
+                return gitClient.ToResult();
             }
 
-            using var client = gitClientResult.Value;
+            using var client = gitClient.Value;
 
             var repositories = await Result.Try(() => client.GetRepositoriesAsync(cancellationToken: cancellationToken));
             if (repositories.IsFailed)

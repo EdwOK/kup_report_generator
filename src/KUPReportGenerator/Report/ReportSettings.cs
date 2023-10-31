@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentResults;
+using KUPReportGenerator.GitCommitsHistory;
 using KUPReportGenerator.Helpers;
 
 namespace KUPReportGenerator.Report;
@@ -22,9 +23,13 @@ public record ReportSettings
 
     public string ProjectName { get; set; } = null!;
 
-    public string ProjectAdoOrganizationName { get; set; } = null!;
+    public string? ProjectAdoOrganizationName { get; set; } = null!;
+
+    public string? ProjectGitDirectory { get; set; }
 
     public string? RapidApiKey { get; set; }
+
+    public GitCommitHistoryProviders GitCommitHistoryProvider { get; set; } = GitCommitHistoryProviders.AzureDevOps;
 
     public async Task<Result<ReportSettings>> SaveAsync(string filePath, CancellationToken cancellationToken)
     {

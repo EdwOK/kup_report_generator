@@ -18,7 +18,7 @@ public static class ConsoleHelpers
         {
             var error = result.Errors[index];
             var reasons = error.Reasons
-                .Select(r => r is ExceptionalError exc ? exc : null)
+                .Select(r => r as ExceptionalError)
                 .Where(r => r is not null)
                 .ToArray();
 

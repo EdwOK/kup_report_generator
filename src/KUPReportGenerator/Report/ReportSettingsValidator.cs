@@ -27,8 +27,19 @@ internal class ReportSettingsValidator : AbstractValidator<ReportSettings>
         RuleFor(s => s.ProjectName)
             .NotEmpty();
 
+        RuleFor(s => s.GitCommitHistoryProvider)
+            .NotNull()
+            .WithMessage("\r\nPlease reinstall the tool and select a commit history provider.");
+
         RuleFor(s => s.ProjectAdoOrganizationName)
-            .NotEmpty();
+            .NotEmpty()
+            .When(s => s.GitCommitHistoryProvider == GitCommitsHistory.GitCommitHistoryProviders.AzureDevOps)
+            .WithMessage("Please reinstall the tool and set the organization name for the Azure DevOps commit history provider.");
+
+        RuleFor(s => s.ProjectGitDirectory)
+            .NotEmpty()
+            .When(s => s.GitCommitHistoryProvider == GitCommitsHistory.GitCommitHistoryProviders.Local)
+            .WithMessage("Please reinstall the tool and configure the organization name for the local commit history provider.");
 
         RuleFor(s => s.RapidApiKey)
             .NotEmpty()
