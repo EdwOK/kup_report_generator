@@ -1,3 +1,10 @@
+## [2.13.0](https://github.com/EdwOK/kup_report_generator/compare/2.12.0...2.13.0) (2023-10-31)
+
+
+### Features
+
+* add git local provider as a second option for getting commits history ([#86](https://github.com/EdwOK/kup_report_generator/issues/86)) ([2becf29](https://github.com/EdwOK/kup_report_generator/commit/2becf2968f14aa1eb60cb963f8d311a8f5ad7d79))
+
 ## [2.12.0](https://github.com/EdwOK/kup_report_generator/compare/2.11.0...2.12.0) (2023-08-14)
 
 
