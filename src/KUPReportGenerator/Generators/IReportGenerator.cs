@@ -1,5 +1,4 @@
-﻿using FluentResults;
-using KUPReportGenerator.Report;
+﻿using KUPReportGenerator.Report;
 
 namespace KUPReportGenerator.Generators;
 

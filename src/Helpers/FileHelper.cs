@@ -1,6 +1,4 @@
-﻿using FluentResults;
-
-namespace KUPReportGenerator.Helpers;
+﻿namespace KUPReportGenerator.Helpers;
 
 public static class FileHelper
 {

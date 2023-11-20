@@ -2,16 +2,11 @@
 
 namespace KUPReportGenerator.Helpers.TaskProgress;
 
-public class SpectreConsoleProgressContext : IProgressContext
+public class SpectreConsoleProgressContext(ProgressContext progressContext) : IProgressContext
 {
-    private readonly ProgressContext _progressContext;
-
-    public SpectreConsoleProgressContext(ProgressContext progressContext) =>
-        _progressContext = progressContext;
-
     public IProgressContextTask AddTask(string description, bool autoStart = true, double maxValue = 100)
     {
-        var task = _progressContext.AddTask(description, autoStart, maxValue);
+        var task = progressContext.AddTask(description, autoStart, maxValue);
         return new SpectreConsoleProgressContextTask(task);
     }
 }

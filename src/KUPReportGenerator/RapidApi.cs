@@ -1,7 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json.Nodes;
-using FluentResults;
+using System.Text.Json.Serialization;
 
 namespace KUPReportGenerator;
 
@@ -30,12 +29,12 @@ internal class RapidApi : IDisposable
     {
         try
         {
-            var jsonNode = await _httpClient.GetFromJsonAsync<JsonNode>(
+            var rapidApiResponse = await _httpClient.GetFromJsonAsync(
                 $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={endDate:yyyy-MM-dd}",
+                jsonTypeInfo: RapidApiResponseJsonContext.Default.RapidApiResponse,
                 cancellationToken);
 
-            var workingDaysResult = jsonNode?["result"]?["working_days"]?["total"]?.ToString();
-            if (!ushort.TryParse(workingDaysResult, out var workingDays))
+            if (!ushort.TryParse(rapidApiResponse?.Result?.WorkingDays?.Total, out var workingDays))
             {
                 return Result.Fail("No monthly working days were found.");
             }
@@ -53,3 +52,24 @@ internal class RapidApi : IDisposable
         _httpClient.Dispose();
     }
 }
+
+internal record RapidApiResponse
+{
+    [JsonPropertyName("result")]
+    public RapidApiResult Result { get; init; } = new();
+
+    public record RapidApiResult
+    {
+        [JsonPropertyName("working_days")]
+        public RapidApiWorkingDays WorkingDays { get; init; } = new();
+
+        public record RapidApiWorkingDays
+        {
+            [JsonPropertyName("total")]
+            public string Total { get; init; } = null!;
+        }
+    }
+}
+
+[JsonSerializable(typeof(RapidApiResponse))]
+internal partial class RapidApiResponseJsonContext : JsonSerializerContext { }

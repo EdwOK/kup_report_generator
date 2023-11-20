@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using FluentResults;
 using HandlebarsDotNet;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Helpers.TaskProgress;
@@ -8,16 +7,11 @@ using KUPReportGenerator.Report;
 
 namespace KUPReportGenerator.Generators;
 
-internal class FileHtmlReportGenerator : IReportGenerator
+internal class FileHtmlReportGenerator(IProgressContext progressContext) : IReportGenerator
 {
-    private readonly IProgressContext _progressContext;
-
-    public FileHtmlReportGenerator(IProgressContext progressContext) =>
-        _progressContext = progressContext;
-
     public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
-        var generateHtmlReportTask = _progressContext.AddTask("[green]Generating html report.[/]");
+        var generateHtmlReportTask = progressContext.AddTask("[green]Generating html report.[/]");
         generateHtmlReportTask.Increment(50.0);
         var htmlReport = await GenerateHtmlReport(reportContext, cancellationToken);
         generateHtmlReportTask.Increment(50.0);
@@ -26,7 +20,7 @@ internal class FileHtmlReportGenerator : IReportGenerator
             return htmlReport.ToResult();
         }
 
-        var saveHtmlReportTask = _progressContext.AddTask("[green]Saving html report in a file.[/]");
+        var saveHtmlReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
         saveHtmlReportTask.Increment(50.0);
         await FileHelper.SaveAsync(Constants.HtmlReportFilePath, Encoding.UTF8.GetBytes(htmlReport.Value),
             cancellationToken);

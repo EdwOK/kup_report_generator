@@ -1,5 +1,4 @@
-﻿using FluentResults;
-using KUPReportGenerator.Helpers;
+﻿using KUPReportGenerator.Helpers;
 using PuppeteerSharp;
 
 namespace KUPReportGenerator.Converters;

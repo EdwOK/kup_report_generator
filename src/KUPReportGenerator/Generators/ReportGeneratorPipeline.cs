@@ -1,20 +1,14 @@
-﻿using FluentResults;
-using KUPReportGenerator.Report;
+﻿using KUPReportGenerator.Report;
 
 namespace KUPReportGenerator.Generators;
 
-public class ReportGeneratorPipeline : IReportGenerator
+public class ReportGeneratorPipeline(IEnumerable<IReportGenerator> reportGenerators) : IReportGenerator
 {
-    private readonly IEnumerable<IReportGenerator> _reportGenerators;
-
-    public ReportGeneratorPipeline(IEnumerable<IReportGenerator> reportGenerators) =>
-        _reportGenerators = reportGenerators;
-
     public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
         var reportResult = Result.Ok();
 
-        foreach (var reportGenerator in _reportGenerators)
+        foreach (var reportGenerator in reportGenerators)
         {
             var generatorResult = await reportGenerator.Generate(reportContext, cancellationToken);
 

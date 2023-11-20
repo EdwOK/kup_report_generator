@@ -1,31 +1,19 @@
 ﻿using System.Runtime.InteropServices;
-using FluentResults;
 using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Installer;
 using Spectre.Console;
 
 namespace Installer;
 
-internal class GithubRepository
+internal class GithubRepository(string owner, string url, IProgressContext progressContext)
 {
-    private readonly Octokit.IGitHubClient _client;
-    private readonly IProgressContext _progressContext;
-    private readonly string _url;
-    private readonly string _owner;
-
-    public GithubRepository(string owner, string url, IProgressContext progressContext)
-    {
-        _owner = owner;
-        _url = url;
-        _client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue(nameof(KUPReportGenerator)));
-        _progressContext = progressContext;
-    }
+    private readonly Octokit.IGitHubClient _client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue(nameof(KUPReportGenerator)));
 
     public async Task<IEnumerable<Release>> GetReleases(CancellationToken cancellationToken)
     {
-        var repoReleasesTask = _progressContext.AddTask("Getting app releases");
+        var repoReleasesTask = progressContext.AddTask("Getting app releases");
         repoReleasesTask.Increment(50.0);
-        var repoReleases = await _client.Repository.Release.GetAll(_owner, _url)
+        var repoReleases = await _client.Repository.Release.GetAll(owner, url)
             .WaitAsync(cancellationToken);
         repoReleasesTask.Increment(25.0);
 

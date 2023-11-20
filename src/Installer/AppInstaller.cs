@@ -1,6 +1,5 @@
 ﻿using System.IO.Compression;
 using System.Runtime.InteropServices;
-using FluentResults;
 
 namespace KUPReportGenerator.Installer;
 

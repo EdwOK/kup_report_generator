@@ -9,10 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="System" />
-    <Using Include="System.Linq" />
-    <Using Include="System.Threading" />
-    <Using Include="System.Threading.Tasks" />
-    <Using Include="System.Collections.Generic" />
+    <Using Include="FluentResults" />
   </ItemGroup>
 </Project>

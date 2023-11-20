@@ -1,5 +1,4 @@
-﻿using FluentResults;
-using Installer;
+﻿using Installer;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Installer;

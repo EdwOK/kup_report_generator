@@ -1,21 +1,14 @@
-﻿using System.Globalization;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
 using CliWrap;
-using FluentResults;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Helpers.TaskProgress;
 using KUPReportGenerator.Report;
 
 namespace KUPReportGenerator.GitCommitsHistory;
 
-internal class LocalGitCommitHistoryProvider : IGitCommitHistoryProvider
+internal class LocalGitCommitHistoryProvider(IProgressContext progressContext) : IGitCommitHistoryProvider
 {
-    private readonly IProgressContext _progressContext;
-
-    public LocalGitCommitHistoryProvider(IProgressContext progressContext) =>
-        _progressContext = progressContext;
-
     public async Task<Result<IEnumerable<GitCommitHistory>>> GetCommitsHistory(ReportGeneratorContext reportContext,
         CancellationToken cancellationToken)
     {
@@ -26,7 +19,7 @@ internal class LocalGitCommitHistoryProvider : IGitCommitHistoryProvider
 
         try
         {
-            var commitsHistoryProgressTask = _progressContext.AddTask("[green]Getting history of commits.[/]");
+            var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]");
             commitsHistoryProgressTask.Increment(50.0);
 
             var fromDate = DatetimeHelper.GetFirstDateOfMonth(reportContext.WorkingMonth);

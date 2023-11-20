@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.Runtime.InteropServices;
 using CliWrap;
-using FluentResults;
 using KUPReportGenerator;
 using KUPReportGenerator.Converters;
 using KUPReportGenerator.Generators;
@@ -49,7 +48,7 @@ try
                         var result = await RunAsync(fileInfo, cancellationToken);
                         if (result.IsSuccess)
                         {
-                            if (HasGeneratedReports())
+                            if (Directory.Exists(Constants.OutputDirectory) && Directory.GetFiles(Constants.OutputDirectory).Any())
                             {
                                 AnsiConsole.MarkupLine($"[blue]Done[/]. Reports are successfully generated.");
                                 AnsiConsole.MarkupLine($"Open [blue]{Constants.OutputDirectory}[/] folder to check the reports.");
@@ -118,11 +117,6 @@ async Task OpenOutputDirectory(CancellationToken cancellationToken)
     }
 
     await Cli.Wrap(shell).WithArguments(arguments).ExecuteAsync(cancellationToken);
-}
-
-bool HasGeneratedReports()
-{
-    return Directory.Exists(Constants.OutputDirectory) && Directory.GetFiles(Constants.OutputDirectory).Any();
 }
 
 async Task<Result> RunAsync(FileInfo fileInfo, CancellationToken cancellationToken)
@@ -215,7 +209,7 @@ async Task<Result<ushort>> GetWorkingDaysInMonth(string? rapidApiKey, string wor
 
 async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellationToken)
 {
-    ReportSettings? reportSettings = null;
+    ReportSettings? existingReportSettings = null;
 
     var installationPrompt = true;
     if (fileInfo.Exists)
@@ -230,7 +224,7 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
             return reportSettingsResult.ToResult();
         }
 
-        reportSettings = reportSettingsResult.Value;
+        existingReportSettings = reportSettingsResult.Value;
     }
 
     if (!installationPrompt)
@@ -241,39 +235,39 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
     AnsiConsole.MarkupLine("Okay. Let's follow step by step and please be attentive: ");
 
     var employeeFullName = await new TextPrompt<string>("1. What's your [blue]name and surname[/]?")
-        .DefaultValue(reportSettings?.EmployeeFullName ?? "Vasya Pupkin")
+        .DefaultValue(existingReportSettings?.EmployeeFullName ?? "Vasya Pupkin")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
     var formattedEmployeeFullName = employeeFullName.ToLower().Replace(' ', '.');
 
     var employeeEmail = await new TextPrompt<string>("2. What's your [blue]corporate email[/]?")
-        .DefaultValue(reportSettings?.EmployeeEmail ?? $"{formattedEmployeeFullName}@google.com")
+        .DefaultValue(existingReportSettings?.EmployeeEmail ?? $"{formattedEmployeeFullName}@google.com")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
     var employeePosition = await new TextPrompt<string>("3. What's your [blue]job position[/]?")
-        .DefaultValue(reportSettings?.EmployeeJobPosition ?? "Software Engineer")
+        .DefaultValue(existingReportSettings?.EmployeeJobPosition ?? "Software Engineer")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
     var employeeFolderPath = await new TextPrompt<string>("4. What's your [blue]remote folder[/]?")
-        .DefaultValue(reportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{formattedEmployeeFullName}")
+        .DefaultValue(existingReportSettings?.EmployeeFolderName ?? $"\\\\gda-file-07\\{formattedEmployeeFullName}")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
     var controlerFullName = await new TextPrompt<string>("5. What's your [blue]controler name and surname[/]?")
-        .DefaultValue(reportSettings?.ControlerFullName ?? "Petya Galupkin")
+        .DefaultValue(existingReportSettings?.ControlerFullName ?? "Petya Galupkin")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
     var controlerPosition = await new TextPrompt<string>("6. What's your [blue]controler job position[/]?")
-        .DefaultValue(reportSettings?.ControlerJobPosition ?? "Dir Software Engineer")
+        .DefaultValue(existingReportSettings?.ControlerJobPosition ?? "Dir Software Engineer")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
     var projectName = await new TextPrompt<string>("7. What's your [blue]project name[/]?")
-        .DefaultValue(reportSettings?.ProjectName ?? "GaleraProject 1.0.0")
+        .DefaultValue(existingReportSettings?.ProjectName ?? "GaleraProject 1.0.0")
         .PromptStyle("yellow")
         .ShowAsync(AnsiConsole.Console, cancellationToken);
 
@@ -289,14 +283,14 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
     if (commitProviderChoise == GitCommitHistoryProviders.Local)
     {
         projectGitDirectory = await new TextPrompt<string>("8. What's your [blue]project root directory on your local system[/]?")
-            .DefaultValue(reportSettings?.ProjectGitDirectory ?? "D://GaleraProject//")
+            .DefaultValue(existingReportSettings?.ProjectGitDirectory ?? "D://GaleraProject//")
             .PromptStyle("yellow")
             .ShowAsync(AnsiConsole.Console, cancellationToken);
     }
     else if (commitProviderChoise == GitCommitHistoryProviders.AzureDevOps)
     {
         projectAdoOrganizationName = await new TextPrompt<string>("8. What's your [blue]organization name in the Azure DevOps[/]?")
-            .DefaultValue(reportSettings?.ProjectAdoOrganizationName ?? "galera-company")
+            .DefaultValue(existingReportSettings?.ProjectAdoOrganizationName ?? "galera-company")
             .PromptStyle("yellow")
             .ShowAsync(AnsiConsole.Console, cancellationToken);
     }
@@ -308,7 +302,7 @@ async Task<Result> InstallAsync(FileInfo fileInfo, CancellationToken cancellatio
         rapidApiKey =
             await new TextPrompt<string>(
                     "10. Great. Go to the [blue]https://rapidapi.com/joursouvres-api/api/working-days/[/] -> sign up -> copy the [blue]`X-RapidAPI-Key`[/].")
-                .DefaultValue(reportSettings?.RapidApiKey ?? "")
+                .DefaultValue(existingReportSettings?.RapidApiKey ?? "")
                 .PromptStyle("yellow")
                 .ShowAsync(AnsiConsole.Console, cancellationToken);
     }

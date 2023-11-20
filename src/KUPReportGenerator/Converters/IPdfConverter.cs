@@ -1,6 +1,4 @@
-﻿using FluentResults;
-
-namespace KUPReportGenerator.Converters;
+﻿namespace KUPReportGenerator.Converters;
 
 internal interface IPdfConverter
 {

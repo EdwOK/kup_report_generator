@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using FluentResults;
 using GitCredentialManager;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Helpers.TaskProgress;
@@ -10,13 +9,8 @@ using Microsoft.VisualStudio.Services.WebApi;
 
 namespace KUPReportGenerator.GitCommitsHistory;
 
-internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
+internal class AdoGitCommitHistoryProvider(IProgressContext progressContext) : IGitCommitHistoryProvider
 {
-    private readonly IProgressContext _progressContext;
-
-    public AdoGitCommitHistoryProvider(IProgressContext progressContext) =>
-        _progressContext = progressContext;
-
     public async Task<Result<IEnumerable<GitCommitHistory>>> GetCommitsHistory(ReportGeneratorContext reportContext,
         CancellationToken cancellationToken)
     {
@@ -27,7 +21,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
                 return Result.Fail("Failed to get commits from AzureDevOps because an organization hasn't been set. Please reinstall the tool.");
             }
 
-            var credentialTask = _progressContext.AddTask("[green]Getting git credentials.[/]");
+            var credentialTask = progressContext.AddTask("[green]Getting git credentials.[/]");
             credentialTask.Increment(50.0);
             var credentials = FindCredentials(reportContext.ReportSettings.EmployeeEmail,
                 reportContext.ReportSettings.ProjectAdoOrganizationName);
@@ -37,7 +31,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
                 return credentials.ToResult();
             }
 
-            var connectionTask = _progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
+            var connectionTask = progressContext.AddTask("[green]Connecting to the Azure DevOps Git API.[/]");
             connectionTask.Increment(50.0);
             var gitClient = CreateGitClient(credentials.Value, reportContext.ReportSettings.ProjectAdoOrganizationName,
                 cancellationToken);
@@ -59,7 +53,7 @@ internal class AdoGitCommitHistoryProvider : IGitCommitHistoryProvider
             var toDate = DatetimeHelper.GetLastDateOfMonth(reportContext.WorkingMonth).ToString(CultureInfo.InvariantCulture);
             var commitsHistoryDict = new Dictionary<string, IEnumerable<GitCommitRef>>();
 
-            var commitsHistoryProgressTask = _progressContext.AddTask("[green]Getting history of commits.[/]",
+            var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]",
                 maxValue: repositories.Value.Count);
 
             var commitsHistoryTasks = repositories.Value.Select(ProcessGetCommitsAsync).ToList();

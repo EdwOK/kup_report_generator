@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using FluentResults;
 using KUPReportGenerator.GitCommitsHistory;
 using KUPReportGenerator.Helpers;
 using KUPReportGenerator.Helpers.TaskProgress;
@@ -8,24 +7,15 @@ using Spectre.Console;
 
 namespace KUPReportGenerator.Generators;
 
-internal class CommitsHistoryReportGenerator : IReportGenerator
+internal class CommitsHistoryReportGenerator(
+    IProgressContext progressContext,
+    IGitCommitHistoryProvider gitCommitHistoryProvider) : IReportGenerator
 {
-    private readonly IProgressContext _progressContext;
-    private readonly IGitCommitHistoryProvider _сommitHistoryProvider;
-
-    public CommitsHistoryReportGenerator(
-        IProgressContext progressContext,
-        IGitCommitHistoryProvider gitCommitHistoryProvider)
-    {
-        _progressContext = progressContext;
-        _сommitHistoryProvider = gitCommitHistoryProvider;
-    }
-
     public async Task<Result> Generate(ReportGeneratorContext reportContext, CancellationToken cancellationToken)
     {
         var commitsHistory = await BuildCommitsHistory(reportContext, cancellationToken);
 
-        var saveCommitsHistoryTask = _progressContext.AddTask("[green]Saving commits history in the report file.[/]");
+        var saveCommitsHistoryTask = progressContext.AddTask("[green]Saving commits history in the report file.[/]");
         saveCommitsHistoryTask.Increment(50.0);
         await FileHelper.SaveAsync(Constants.CommitsHistoryFilePath, Encoding.UTF8.GetBytes(commitsHistory.ValueOrDefault ?? ""),
             cancellationToken);
@@ -38,7 +28,7 @@ internal class CommitsHistoryReportGenerator : IReportGenerator
     {
         try
         {
-            var commitsHistory = await _сommitHistoryProvider.GetCommitsHistory(reportContext, cancellationToken);
+            var commitsHistory = await gitCommitHistoryProvider.GetCommitsHistory(reportContext, cancellationToken);
             if (commitsHistory.IsFailed)
             {
                 return commitsHistory.ToResult();
