@@ -1,3 +1,10 @@
+## [2.14.0](https://github.com/EdwOK/kup_report_generator/compare/2.13.0...2.14.0) (2023-11-20)
+
+
+### Features
+
+* migrate to .NET 8 ([6a65ae7](https://github.com/EdwOK/kup_report_generator/commit/6a65ae7d5c4e3711fdfc717e9bb16f9172053b69))
+
 ## [2.13.0](https://github.com/EdwOK/kup_report_generator/compare/2.12.0...2.13.0) (2023-10-31)
 
 
