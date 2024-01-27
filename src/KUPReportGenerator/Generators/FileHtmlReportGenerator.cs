@@ -15,7 +15,7 @@ internal class FileHtmlReportGenerator(IProgressContext progressContext) : IRepo
 
         var generateHtmlReportTask = progressContext.AddTask("[green]Generating html report.[/]");
         generateHtmlReportTask.Increment(50.0);
-        var htmlReport = await Result.Try(() => GenerateHtmlReport(reportContext, cancellationToken), 
+        var htmlReport = await Result.Try(() => GenerateHtmlReport(reportContext, cancellationToken),
             error.CausedBy);
         generateHtmlReportTask.Increment(50.0);
         if (htmlReport.Value.IsFailed)
@@ -25,7 +25,7 @@ internal class FileHtmlReportGenerator(IProgressContext progressContext) : IRepo
 
         var saveHtmlReportTask = progressContext.AddTask("[green]Saving html report in a file.[/]");
         saveHtmlReportTask.Increment(50.0);
-        var saveReport = await Result.Try(() => SaveReport(htmlReport.ValueOrDefault.ValueOrDefault, cancellationToken), 
+        var saveReport = await Result.Try(() => SaveReport(htmlReport.ValueOrDefault.ValueOrDefault, cancellationToken),
             error.CausedBy);
         saveHtmlReportTask.Increment(50.0);
 

@@ -125,7 +125,7 @@ async Task<Result> Run(FileInfo fileInfo, CancellationToken cancellationToken)
 
     var workingMonth = DatetimeHelper.GetCurrentMonthName();
 
-    var workingDaysInMonth = await WorkingDaysCalculator.GetWorkingDaysInMonth(workingMonth, 
+    var workingDaysInMonth = await WorkingDaysCalculator.GetWorkingDaysInMonth(workingMonth,
         reportSettings.Value.RapidApiKey, cancellationToken);
     if (workingDaysInMonth.IsFailed)
     {

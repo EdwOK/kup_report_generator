@@ -15,7 +15,7 @@ public class AppInstaller
             return appReleaseAsset.ToResult();
         }
 
-        var appArchivePath = await DownloadAppArchive(Constants.DownloadDirectory, appReleaseAsset.Value, 
+        var appArchivePath = await DownloadAppArchive(Constants.DownloadDirectory, appReleaseAsset.Value,
             cancellationToken);
         if (appArchivePath.IsFailed)
         {
@@ -42,7 +42,7 @@ public class AppInstaller
         Directory.CreateDirectory(downloadDirectoryPath);
 
         var downloadFilePath = Path.Combine(downloadDirectoryPath, releaseAsset.FileName);
-        var downloadArchivePath = await DownloadFile(releaseAsset.DownloadUrl, downloadFilePath, 
+        var downloadArchivePath = await DownloadFile(releaseAsset.DownloadUrl, downloadFilePath,
             cancellationToken);
         if (downloadArchivePath.IsFailed)
         {

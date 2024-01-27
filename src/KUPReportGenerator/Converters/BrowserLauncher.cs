@@ -1,5 +1,5 @@
-﻿using PuppeteerSharp.BrowserData;
-using PuppeteerSharp;
+﻿using PuppeteerSharp;
+using PuppeteerSharp.BrowserData;
 
 namespace KUPReportGenerator.Converters;
 

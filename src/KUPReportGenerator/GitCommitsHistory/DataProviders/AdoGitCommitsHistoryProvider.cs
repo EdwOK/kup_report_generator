@@ -42,7 +42,7 @@ internal class AdoGitCommitsHistoryProvider(IProgressContext progressContext) : 
         {
             return error.CausedBy(gitClientResult.Errors);
         }
-        
+
         using GitHttpClient? gitClient = gitClientResult.Value;
 
         var fromDate = DatetimeHelper.GetFirstDateOfMonth(reportContext.WorkingMonth).ToString(CultureInfo.InvariantCulture);
@@ -55,9 +55,9 @@ internal class AdoGitCommitsHistoryProvider(IProgressContext progressContext) : 
             return error.CausedBy(repositories.Errors);
         }
 
-        var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]", 
+        var commitsHistoryProgressTask = progressContext.AddTask("[green]Getting history of commits.[/]",
             maxValue: repositories.Value.Count);
-        var commitsFetchingProcessTasks = 
+        var commitsFetchingProcessTasks =
             repositories.Value.Select(r => ProcessGetCommitsAsync(gitClient, r)).ToList();
         while (commitsFetchingProcessTasks.Count != 0)
         {

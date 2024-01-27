@@ -77,7 +77,7 @@ internal class LocalGitCommitHistoryProvider(IProgressContext progressContext) :
         return commitsHistory;
     }
 
-    private static async Task<Result<string[]>> GetCommitsHistoryByRepository(string repository, string authors, 
+    private static async Task<Result<string[]>> GetCommitsHistoryByRepository(string repository, string authors,
         DateTime from, DateTime to, CancellationToken cancellationToken)
     {
         var arguments =
