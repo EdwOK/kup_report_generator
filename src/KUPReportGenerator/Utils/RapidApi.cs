@@ -2,7 +2,7 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
-namespace KUPReportGenerator;
+namespace KUPReportGenerator.Utils;
 
 internal class RapidApi : IDisposable
 {
@@ -27,23 +27,25 @@ internal class RapidApi : IDisposable
     public async Task<Result<ushort>> GetWorkingDays(DateTime startDate, DateTime endDate, string countryCode = "PL",
         CancellationToken cancellationToken = default)
     {
+        var error = new Error("Failed to get working days from the Rapid API.");
+
         try
         {
-            var rapidApiResponse = await _httpClient.GetFromJsonAsync(
+            var rapidApiResponse = await _httpClient.GetFromJsonAsync<RapidApiResponse>(
                 $"analyse?country_code={countryCode}&start_date={startDate:yyyy-MM-dd}&end_date={endDate:yyyy-MM-dd}",
                 jsonTypeInfo: RapidApiResponseJsonContext.Default.RapidApiResponse,
                 cancellationToken);
 
             if (!ushort.TryParse(rapidApiResponse?.Result?.WorkingDays?.Total, out var workingDays))
             {
-                return Result.Fail("No monthly working days were found.");
+                return error.CausedBy("No monthly working days were found.");
             }
 
             return Result.Ok(workingDays);
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error("Failed to get working days from the Rapid API.").CausedBy(exc));
+            return error.CausedBy(exc);
         }
     }
 
@@ -72,4 +74,4 @@ internal record RapidApiResponse
 }
 
 [JsonSerializable(typeof(RapidApiResponse))]
-internal partial class RapidApiResponseJsonContext : JsonSerializerContext { }
+internal partial class RapidApiResponseJsonContext : JsonSerializerContext;

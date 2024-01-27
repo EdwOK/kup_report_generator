@@ -1,6 +1,6 @@
 ﻿using Spectre.Console;
 
-namespace KUPReportGenerator.Helpers.TaskProgress;
+namespace Helpers.TaskProgress;
 
 public class SpectreConsoleProgressContextTask : IProgressContextTask
 {
@@ -12,6 +12,10 @@ public class SpectreConsoleProgressContextTask : IProgressContextTask
         _task = task;
         _progress = _task;
     }
+
+    public void Start() => _task.StartTask();
+
+    public void Stop() => _task.StopTask();
 
     public void Increment(double value) => _task.Increment(value);
 

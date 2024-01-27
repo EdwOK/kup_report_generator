@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace KUPReportGenerator.Helpers;
+namespace Helpers;
 
 public static class DatetimeHelper
 {

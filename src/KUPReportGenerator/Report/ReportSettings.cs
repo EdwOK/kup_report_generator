@@ -1,8 +1,8 @@
 ﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using KUPReportGenerator.GitCommitsHistory;
-using KUPReportGenerator.Helpers;
+using Helpers;
+using KUPReportGenerator.GitCommitsHistory.DataProviders;
 
 namespace KUPReportGenerator.Report;
 
@@ -28,10 +28,12 @@ public record ReportSettings
 
     public string? RapidApiKey { get; set; }
 
-    public GitCommitHistoryProviders GitCommitHistoryProvider { get; set; } = GitCommitHistoryProviders.AzureDevOps;
+    public GitCommitsHistoryProvider GitCommitHistoryProvider { get; set; } = GitCommitsHistoryProvider.AzureDevOps;
 
     public async Task<Result<ReportSettings>> SaveAsync(string filePath, CancellationToken cancellationToken)
     {
+        var error = new Error("Couldn't save the report settings file.");
+
         try
         {
             await using var fileStream = File.Create(filePath);
@@ -41,7 +43,7 @@ public record ReportSettings
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error("Couldn't save the report settings file.").CausedBy(exc));
+            return error.CausedBy(exc);
         }
 
         return Result.Ok(this);
@@ -49,10 +51,12 @@ public record ReportSettings
 
     public static async Task<Result<ReportSettings>> OpenAsync(string filePath, CancellationToken cancellationToken)
     {
+        var error = new Error("Couldn't read the report settings file.");
+
         var reportSettingsText = await FileHelper.ReadAsync(filePath, cancellationToken);
         if (reportSettingsText.IsFailed)
         {
-            return reportSettingsText.ToResult();
+            return error.CausedBy(reportSettingsText.Errors);
         }
 
         ReportSettings? reportSettings;
@@ -62,14 +66,15 @@ public record ReportSettings
             await using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(reportSettingsText.Value));
             reportSettings = await JsonSerializer.DeserializeAsync(memoryStream, cancellationToken: cancellationToken,
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
+
             if (reportSettings is null)
             {
-                return Result.Fail("Failed to parse JSON from the report file settings.");
+                return error.CausedBy("Failed to parse JSON from the report file settings.");
             }
         }
         catch (Exception exc)
         {
-            return Result.Fail(new Error("Couldn't read the report settings file.").CausedBy(exc));
+            return error.CausedBy(exc);
         }
 
         return Result.Ok(reportSettings);
@@ -78,6 +83,4 @@ public record ReportSettings
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(ReportSettings))]
-internal partial class SourceGenerationContext : JsonSerializerContext
-{
-}
+internal partial class SourceGenerationContext : JsonSerializerContext;
