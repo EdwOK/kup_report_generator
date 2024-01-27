@@ -1,4 +1,4 @@
-﻿namespace KUPReportGenerator.Helpers.TaskProgress;
+﻿namespace Helpers.TaskProgress;
 
 public interface IProgressContext
 {

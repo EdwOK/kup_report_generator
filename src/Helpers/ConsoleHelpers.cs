@@ -1,6 +1,9 @@
-﻿using Spectre.Console;
+﻿using System.Runtime.InteropServices;
+using CliWrap;
+using Serilog;
+using Spectre.Console;
 
-namespace KUPReportGenerator.Helpers;
+namespace Helpers;
 
 public static class ConsoleHelpers
 {
@@ -16,27 +19,50 @@ public static class ConsoleHelpers
         for (var index = 0; index < result.Errors.Count; index++)
         {
             var error = result.Errors[index];
-            var reasons = error.Reasons
-                .Select(r => r as ExceptionalError)
-                .Where(r => r is not null)
-                .ToArray();
 
             var grid = new Grid();
             grid.AddColumn(new GridColumn().LeftAligned().NoWrap());
             grid.AddRow($"[red]{error.Message}[/]");
 
-            if (reasons.Any())
+            var reasons = error.Reasons
+                .Where(r => r is not ExceptionalError)
+                .ToArray();
+            if (reasons.Length > 0)
             {
                 grid.AddEmptyRow();
+                grid.AddRow("Reasons: ");
                 foreach (var reason in reasons)
                 {
-                    grid.AddRow($"[orangered1]{$"{reason!.Exception.Source}: {reason!.Exception.Message}"}[/]");
+                    grid.AddRow($"[orangered1]{$"{reason!.Message}"}[/]");
                 }
+            }
+
+            foreach (var exceptionalError in error.Reasons.OfType<ExceptionalError>())
+            {
+                Log.Logger.Error(exceptionalError.Exception, exceptionalError.Exception.Message);
             }
 
             table.AddRow(new Text($"{index + 1}"), grid);
         }
 
         AnsiConsole.Write(table);
+    }
+
+    public static async Task OpenDirectory(string directory, CancellationToken cancellationToken)
+    {
+        var shell = "cmd";
+        var arguments = $"/c start {directory}";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            shell = "bash";
+            arguments = $"-c open {directory}";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            shell = "bash";
+            arguments = $"-c xdg-open {directory}";
+        }
+
+        await Cli.Wrap(shell).WithArguments(arguments).ExecuteAsync(cancellationToken);
     }
 }

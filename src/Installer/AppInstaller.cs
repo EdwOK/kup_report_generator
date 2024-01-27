@@ -1,86 +1,122 @@
-﻿using System.IO.Compression;
+﻿using System.Formats.Tar;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
+using Helpers.Releases;
 
-namespace KUPReportGenerator.Installer;
+namespace Installer;
 
 public class AppInstaller
 {
-    public async Task<Result> Install(Release release, OSPlatform osPlatform, CancellationToken cancellationToken)
+    public static async Task<Result> Install(AppRelease release, OSPlatform osPlatform, CancellationToken cancellationToken)
     {
-        var releaseAsset = release.Assets.FirstOrDefault(a => a.OSPlatform.Equals(osPlatform));
+        var appReleaseAsset = GetAppReleaseAsset(release, osPlatform);
+        if (appReleaseAsset.IsFailed)
+        {
+            return appReleaseAsset.ToResult();
+        }
+
+        var appArchivePath = await DownloadAppArchive(Constants.DownloadDirectory, appReleaseAsset.Value, 
+            cancellationToken);
+        if (appArchivePath.IsFailed)
+        {
+            return appArchivePath.ToResult();
+        }
+
+        var appPath = ExtractAppArchive(appArchivePath.Value);
+        if (appPath.IsFailed)
+        {
+            return appPath.ToResult();
+        }
+
+        var updateAppFiles = UpdateAppFiles(Constants.CurrentDirectory, appPath.Value);
+        return updateAppFiles;
+    }
+
+    private static async Task<Result<string>> DownloadAppArchive(string downloadDirectoryPath, AppReleaseAsset releaseAsset,
+        CancellationToken cancellationToken)
+    {
+        if (Directory.Exists(downloadDirectoryPath))
+        {
+            Directory.Delete(downloadDirectoryPath, true);
+        }
+        Directory.CreateDirectory(downloadDirectoryPath);
+
+        var downloadFilePath = Path.Combine(downloadDirectoryPath, releaseAsset.FileName);
+        var downloadArchivePath = await DownloadFile(releaseAsset.DownloadUrl, downloadFilePath, 
+            cancellationToken);
+        if (downloadArchivePath.IsFailed)
+        {
+            return downloadArchivePath.ToResult();
+        }
+
+        return Result.Ok(downloadArchivePath.Value);
+    }
+
+    private static Result<AppReleaseAsset> GetAppReleaseAsset(AppRelease release, OSPlatform osPlatform)
+    {
+        var releaseAsset = release.Assets.FirstOrDefault(a => a.OsPlatform.Equals(osPlatform));
         if (releaseAsset is null)
         {
-            return Result.Fail($"No release asset found for the specified {osPlatform} OS platform.");
+            return Result.Fail($"No release asset found for the specified OS '{osPlatform}'.");
         }
 
-        var downloadDirectoryPath = CreateDownloadDirectory(Constants.DownloadDirectory);
-        var archivePath = Path.Combine(downloadDirectoryPath, $"{release.Version}-{releaseAsset!.FileName}");
+        return Result.Ok(releaseAsset);
+    }
 
-        var downloadedArchive = await DownloadFile(releaseAsset.DownloadUrl, archivePath, cancellationToken);
-
-        var extractPath = ExtractArchive(downloadedArchive, downloadDirectoryPath);
-        if (extractPath.IsFailed)
+    private static Result UpdateAppFiles(string oldAppPath, string newAppPath)
+    {
+        var oldFiles = Directory.GetFiles(oldAppPath);
+        foreach (var oldFilePath in oldFiles)
         {
-            return extractPath.ToResult();
+            var oldFileName = Path.GetFileName(oldFilePath);
+            var destFilePath = Path.Combine(oldAppPath, $".{oldFileName}.old");
+            File.Move(oldFilePath, destFilePath, true);
         }
 
-        UpdateAppFiles(Constants.CurrentDirectory, extractPath.Value);
+        var newFiles = Directory.GetFiles(newAppPath);
+        foreach (var newFilePath in newFiles)
+        {
+            var newFileName = Path.GetFileName(newFilePath);
+            var destFilePath = Path.Combine(oldAppPath, newFileName);
+            File.Move(newFilePath, destFilePath, true);
+        }
 
         return Result.Ok();
     }
 
-    private static string CreateDownloadDirectory(string directoryPath)
-    {
-        if (Directory.Exists(directoryPath))
-        {
-            Directory.Delete(directoryPath, true);
-        }
-
-        Directory.CreateDirectory(directoryPath);
-        return directoryPath;
-    }
-
-    private static void UpdateAppFiles(string destinationPath, string extractPath)
-    {
-        var newFiles = Directory.GetFiles(extractPath);
-
-        foreach (var newFilePath in newFiles)
-        {
-            var newFileName = Path.GetFileName(newFilePath);
-
-            var destFilePath = Path.Combine(destinationPath, newFileName);
-            if (File.Exists(destFilePath))
-            {
-                var oldFilePath = Path.Combine(extractPath, $"{newFileName}.old");
-                File.Move(destFilePath, oldFilePath, true);
-            }
-
-            File.Move(newFilePath, destFilePath, true);
-        }
-    }
-
-    private static Result<string> ExtractArchive(string archivePath, string extractPath)
+    private static Result<string> ExtractAppArchive(string archivePath)
     {
         var archiveExtension = Path.GetExtension(archivePath);
+        var archiveDirectory = Path.GetDirectoryName(archivePath) ?? Constants.DownloadDirectory;
+
         return archiveExtension switch
         {
             ".zip" => Result.Try(() =>
             {
-                ZipFile.ExtractToDirectory(archivePath, extractPath, true);
+                ZipFile.ExtractToDirectory(archivePath, archiveDirectory, true);
                 File.Delete(archivePath);
-                return extractPath;
+                return archiveDirectory;
             }),
-            _ => Result.Fail($"No support for {archiveExtension}")
+            ".tar.gz" => Result.Try(() =>
+            {
+                using var archiveStream = File.Open(archivePath, FileMode.Open);
+                using var gzipStream = new GZipStream(archiveStream, CompressionMode.Decompress);
+                TarFile.ExtractToDirectory(gzipStream, archiveDirectory, true);
+                File.Delete(archivePath);
+                return archiveDirectory;
+            }),
+            _ => Result.Fail($"No support for '{archiveExtension}'.")
         };
     }
 
-    private static async Task<string> DownloadFile(string fileUrl, string filePath, CancellationToken cancellationToken)
+    private static async Task<Result<string>> DownloadFile(string fileUrl, string filePath,
+        CancellationToken cancellationToken)
     {
         using var httpClient = new HttpClient();
-        using var downloadStream = await httpClient.GetStreamAsync(fileUrl, cancellationToken);
-        using var fileStream = File.Create(filePath);
+        await using var downloadStream = await httpClient.GetStreamAsync(fileUrl, cancellationToken);
+        await using var fileStream = File.Create(filePath);
         await downloadStream.CopyToAsync(fileStream, cancellationToken);
         await fileStream.FlushAsync(cancellationToken);
-        return filePath;
+        return Result.Ok(filePath);
     }
 }
