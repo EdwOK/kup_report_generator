@@ -14,7 +14,7 @@ internal class CommitsHistoryReportGenerator(
     {
         var error = new Error("Failed to generate commits history.");
 
-        var commitsHistory = await Result.Try(() => BuildCommitsHistory(reportContext, cancellationToken), 
+        var commitsHistory = await Result.Try(() => BuildCommitsHistory(reportContext, cancellationToken),
             error.CausedBy);
         if (commitsHistory.Value.IsFailed)
         {
