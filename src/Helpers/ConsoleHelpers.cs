@@ -33,16 +33,16 @@ public static class ConsoleHelpers
                 grid.AddRow("Reasons: ");
                 foreach (var reason in reasons)
                 {
-                    grid.AddRow($"[orangered1]{$"{reason!.Message}"}[/]");
+                    grid.AddRow($"[orangered1]{reason!.Message}[/]");
                 }
             }
+
+            table.AddRow(new Text($"{index + 1}"), grid);
 
             foreach (var exceptionalError in error.Reasons.OfType<ExceptionalError>())
             {
                 Log.Logger.Error(exceptionalError.Exception, exceptionalError.Exception.Message);
             }
-
-            table.AddRow(new Text($"{index + 1}"), grid);
         }
 
         AnsiConsole.Write(table);

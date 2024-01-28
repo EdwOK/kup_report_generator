@@ -1,5 +1,5 @@
 ﻿using Helpers;
-using Helpers.Releases;
+using Helpers.Github;
 using Helpers.TaskProgress;
 using Installer;
 using Serilog;

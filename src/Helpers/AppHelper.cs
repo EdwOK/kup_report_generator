@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
-using Helpers.Releases;
+using Helpers.Github;
 
 namespace Helpers;
 

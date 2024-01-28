@@ -1,7 +1,7 @@
 ﻿using System.Formats.Tar;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
-using Helpers.Releases;
+using Helpers.Github;
 
 namespace Installer;
 
