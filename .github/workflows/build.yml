@@ -20,7 +20,18 @@ jobs:
         run: dotnet format --verify-no-changes KUPReportGenerator.sln
 
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            runtime: "win-x64"
+          - os: ubuntu-latest
+            runtime: "linux-x64"
+          - os: macos-latest
+            runtime: "osx-x64"
+
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -44,6 +55,11 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore
+
+      - name: Publish
+        run: |
+          dotnet publish src/Installer/Installer.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+          dotnet publish src/KUPReportGenerator/KUPReportGenerator.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
 
       - name: Check next release version
         env:
