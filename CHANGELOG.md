@@ -1,3 +1,15 @@
+## [2.15.0](https://github.com/EdwOK/kup_report_generator/compare/2.14.0...2.15.0) (2024-01-28)
+
+
+### Features
+
+* big refactor ([b38c965](https://github.com/EdwOK/kup_report_generator/commit/b38c965036b12d2024cf1c86b31c7ace76057070))
+
+
+### Bug Fixes
+
+* linter errors ([eaa4376](https://github.com/EdwOK/kup_report_generator/commit/eaa4376db19bdc9748f99ed9bfc55a0c45b4642d))
+
 ## [2.14.0](https://github.com/EdwOK/kup_report_generator/compare/2.13.0...2.14.0) (2023-11-20)
 
 
