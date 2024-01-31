@@ -39,12 +39,12 @@ internal class LocalGitCommitHistoryProvider(IProgressContext progressContext) :
         var commitsHistory = new List<GitCommitHistory>();
         foreach ((string repositoryPath, Task<Result<string[]>> commitsLine) in commitsByRepositoriesTasks)
         {
-            if (commitsLine.IsFaulted)
+            if (commitsLine.IsFaulted || commitsLine.Result.IsFailed)
             {
                 continue;
             }
 
-            var commits = commitsLine.Result.ValueOrDefault
+            var commits = commitsLine.Result.Value
                 .Select(s =>
                 {
                     var parts = s.Split(',');
@@ -69,8 +69,8 @@ internal class LocalGitCommitHistoryProvider(IProgressContext progressContext) :
 
             commitsHistory.Add(new GitCommitHistory
             {
-                Repository = repositoryPath.Split(Path.DirectorySeparatorChar).Last()!,
-                Commits = commits!
+                Repository = repositoryPath.Split(Path.DirectorySeparatorChar).Last(),
+                Commits = commits
             });
         }
 
