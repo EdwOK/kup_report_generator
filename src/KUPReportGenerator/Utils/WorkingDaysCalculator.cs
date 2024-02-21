@@ -2,12 +2,11 @@
 
 namespace KUPReportGenerator.Utils;
 
-internal class WorkingDaysCalculator
+internal class WorkingDaysCalculator(string? rapidApiKey)
 {
     private const ushort DefaultWorkingDays = 21;
 
-    public static async Task<Result<ushort>> GetWorkingDaysInMonth(string monthName, string? rapidApiKey,
-        CancellationToken cancellationToken)
+    public async Task<Result<ushort>> GetWorkingDaysInMonth(string monthName, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(rapidApiKey))
         {

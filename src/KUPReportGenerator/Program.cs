@@ -116,7 +116,8 @@ async Task<Result> Run(FileInfo fileInfo, CancellationToken cancellationToken)
         return new Error("The tool was installed with errors.").CausedBy(reportSettings.Errors);
     }
 
-    var validationResult = await new ReportSettingsValidator().ValidateAsync(reportSettings.Value, cancellationToken);
+    var reportSettingsValidator = new ReportSettingsValidator();
+    var validationResult = await reportSettingsValidator.ValidateAsync(reportSettings.Value, cancellationToken);
     if (!validationResult.IsValid)
     {
         return new Error($"The tool was installed with validation errors in the setting file: {Constants.SettingsFilePath}.")
@@ -125,8 +126,8 @@ async Task<Result> Run(FileInfo fileInfo, CancellationToken cancellationToken)
 
     var workingMonth = DatetimeHelper.GetCurrentMonthName();
 
-    var workingDaysInMonth = await WorkingDaysCalculator.GetWorkingDaysInMonth(workingMonth,
-        reportSettings.Value.RapidApiKey, cancellationToken);
+    var workingDaysCalculator = new WorkingDaysCalculator(reportSettings.Value.RapidApiKey);
+    var workingDaysInMonth = await workingDaysCalculator.GetWorkingDaysInMonth(workingMonth, cancellationToken);
     if (workingDaysInMonth.IsFailed)
     {
         return workingDaysInMonth.ToResult();
