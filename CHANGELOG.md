@@ -1,3 +1,10 @@
+## [2.15.1](https://github.com/EdwOK/kup_report_generator/compare/2.15.0...2.15.1) (2024-01-31)
+
+
+### Bug Fixes
+
+* result processing for local git commits provider ([756d797](https://github.com/EdwOK/kup_report_generator/commit/756d79771ad4f6b6af04ff70fec8c36f5555047f))
+
 ## [2.15.0](https://github.com/EdwOK/kup_report_generator/compare/2.14.0...2.15.0) (2024-01-28)
 
 
