@@ -56,6 +56,7 @@ jobs:
             runtime: "osx-x64"
 
     runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -73,7 +74,8 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
 
-      - name: Publish
-        run: |
-          dotnet publish src/Installer/Installer.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
-          dotnet publish src/KUPReportGenerator/KUPReportGenerator.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+      - name: Publish Installer project
+        run: dotnet publish src/Installer/Installer.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+          
+      - name: Publish KUPReportGenerator project
+        run: dotnet publish src/KUPReportGenerator/KUPReportGenerator.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
