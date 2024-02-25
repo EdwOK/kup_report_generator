@@ -75,7 +75,7 @@ jobs:
         run: dotnet build --no-restore
 
       - name: Publish Installer project
-        run: dotnet publish src/Installer/Installer.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+        run: dotnet publish src/Installer/Installer.csproj -c Release -o ${{ env.DOTNET_ROOT }}/${{ matrix.runtime }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
           
       - name: Publish KUPReportGenerator project
-        run: dotnet publish src/KUPReportGenerator/KUPReportGenerator.csproj -c Release -o ${{ env.DOTNET_ROOT }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
+        run: dotnet publish src/KUPReportGenerator/KUPReportGenerator.csproj -c Release -o ${{ env.DOTNET_ROOT }}/${{ matrix.runtime }}/publish -r ${{ matrix.runtime }} -p:Version=1.0.0 -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained=true
