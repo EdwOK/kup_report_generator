@@ -30,7 +30,7 @@ internal class ReportSettingsValidator : AbstractValidator<ReportSettings>
 
         RuleFor(s => s.GitCommitHistoryProvider)
             .NotNull()
-            .WithMessage("\r\nPlease reinstall the tool and select a commit history provider.");
+            .WithMessage("Please reinstall the tool and select a commit history provider.");
 
         RuleFor(s => s.ProjectAdoOrganizationName)
             .NotEmpty()

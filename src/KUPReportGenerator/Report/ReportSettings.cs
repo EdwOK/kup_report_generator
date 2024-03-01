@@ -39,7 +39,6 @@ public record ReportSettings
             await using var fileStream = File.Create(filePath);
             await JsonSerializer.SerializeAsync(fileStream, this, cancellationToken: cancellationToken,
                 jsonTypeInfo: SourceGenerationContext.Default.ReportSettings);
-            await fileStream.DisposeAsync();
         }
         catch (Exception exc)
         {
