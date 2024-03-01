@@ -50,7 +50,7 @@ jobs:
 
       - name: Archive Artifact (Windows x64)
         if: matrix.os == 'windows-latest'
-        run: powershell Compress-Archive -Path ${{ env.DOTNET_ROOT }}\publish\* -DestinationPath ${{ env.DOTNET_ROOT }}\${{ matrix.package_name }}
+        run: powershell Compress-Archive -Path '${{ env.DOTNET_ROOT }}\publish\*' -DestinationPath '${{ env.DOTNET_ROOT }}\${{ matrix.package_name }}'
 
       - name: Archive Artifact (Linux x64)
         if: matrix.os == 'ubuntu-latest'
