@@ -1,3 +1,10 @@
+## [2.16.0](https://github.com/EdwOK/kup_report_generator/compare/2.15.1...2.16.0) (2024-03-01)
+
+
+### Features
+
+* update nuget and npm packages ([ea97851](https://github.com/EdwOK/kup_report_generator/commit/ea978513e483e491b12373bde0935a2982207c60))
+
 ## [2.15.1](https://github.com/EdwOK/kup_report_generator/compare/2.15.0...2.15.1) (2024-01-31)
 
 
