@@ -1,3 +1,10 @@
+## [2.17.0](https://github.com/EdwOK/kup_report_generator/compare/2.16.0...2.17.0) (2024-03-04)
+
+
+### Features
+
+* check prerequisites ([ff9d6eb](https://github.com/EdwOK/kup_report_generator/commit/ff9d6eb1c6727d1b3832f67834062e8e9a6012e6))
+
 ## [2.16.0](https://github.com/EdwOK/kup_report_generator/compare/2.15.1...2.16.0) (2024-03-01)
 
 
