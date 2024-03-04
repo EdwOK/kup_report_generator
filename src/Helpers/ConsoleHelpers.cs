@@ -12,6 +12,13 @@ public static class ConsoleHelpers
 
     public static void WriteErrors(ResultBase result)
     {
+        if (!HasErrors(result))
+        {
+            return;
+        }
+
+        AnsiConsole.MarkupLine("[red]Errors[/] have occurred:");
+
         var table = new Table();
         table.AddColumn("N");
         table.AddColumn(new TableColumn("Error").Centered());

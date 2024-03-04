@@ -33,6 +33,13 @@ try
         AnsiConsole.Write(new FigletText("KUP Report Generator").Centered().Color(Color.Green1));
         AnsiConsole.MarkupLine($"Started v[blue]{AppHelper.AppVersion}[/], Press [blue]Ctrl-C[/] to stop.");
 
+        var checkPrerequisites = await AppHelper.CheckPrerequisites(cancellationToken);
+        if (checkPrerequisites.IsFailed)
+        {
+            ConsoleHelpers.WriteErrors(checkPrerequisites);
+            return;
+        }
+
         var newAppVersion = await AppHelper.CheckAppVersionForUpdate(AppHelper.AppVersion, cancellationToken);
         if (newAppVersion is not null)
         {
@@ -66,9 +73,8 @@ try
                             AnsiConsole.MarkupLine("[blue]Done[/]. No reports were created.");
                         }
                     }
-                    else if (ConsoleHelpers.HasErrors(result))
+                    else
                     {
-                        AnsiConsole.MarkupLine("[red]Errors[/] have occurred:");
                         ConsoleHelpers.WriteErrors(result);
                     }
 
@@ -81,9 +87,8 @@ try
                     {
                         AnsiConsole.MarkupLine("[blue]Done[/]. Now you can run.");
                     }
-                    else if (ConsoleHelpers.HasErrors(result))
+                    else
                     {
-                        AnsiConsole.MarkupLine("[red]Errors[/] have occurred:");
                         ConsoleHelpers.WriteErrors(result);
                     }
 
