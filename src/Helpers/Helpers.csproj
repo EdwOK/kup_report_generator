@@ -11,8 +11,8 @@
     <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Spectre.Console" Version="0.48.0" />
     <PackageReference Include="Devlooped.CredentialManager" Version="2.4.1" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.205.1" />
-    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.205.1" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="19.225.1" />
   </ItemGroup>
   
 </Project>
